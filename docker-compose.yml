@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"  # Expose frontend directly on port 80
+    environment:
+      - REACT_APP_API_URL=/api
+    volumes:
+      # Mount only specific directories, not the entire app directory
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - LEONARDO_API_KEY=${LEONARDO_API_KEY}
+    command: uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
