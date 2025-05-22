@@ -5,7 +5,10 @@ import {
   CssBaseline,
   Alert,
   Snackbar,
-  Box
+  Box,
+  Fade,
+  Slide,
+  Grow
 } from '@mui/material';
 import WelcomeScreen from './components/WelcomeScreen';
 import CameraCapture from './components/CameraCapture';
@@ -64,25 +67,64 @@ const App = () => {
     APP_STATES 
   } = useAppState();
   
+  // Hàm xác định kiểu transition dựa trên state
+  const getTransitionType = (state) => {
+    switch (state) {
+      case APP_STATES.WELCOME:
+      case APP_STATES.COMPLETE:
+        return "fade";
+      case APP_STATES.RESULTS:
+      case APP_STATES.GENERATING:
+        return "grow";
+      default:
+        return "slide";
+    }
+  };
+  
   // Render component tương ứng với state hiện tại
   const renderCurrentScreen = () => {
-    switch (currentState) {
-      case APP_STATES.WELCOME:
-        return <WelcomeScreen />;
-      case APP_STATES.CAPTURE:
-        return <CameraCapture />;
-      case APP_STATES.PROMPT:
-        return <PromptInput />;
-      case APP_STATES.GENERATING:
-        return <GeneratingScreen />;
-      case APP_STATES.RESULTS:
-        return <ResultScreen />;
-      case APP_STATES.PRINTING:
-        return <PrintingScreen />;
-      case APP_STATES.COMPLETE:
-        return <CompleteScreen />;
-      default:
-        return <WelcomeScreen />;
+    const screen = (() => {
+      switch (currentState) {
+        case APP_STATES.WELCOME:
+          return <WelcomeScreen />;
+        case APP_STATES.CAPTURE:
+          return <CameraCapture />;
+        case APP_STATES.PROMPT:
+          return <PromptInput />;
+        case APP_STATES.GENERATING:
+          return <GeneratingScreen />;
+        case APP_STATES.RESULTS:
+          return <ResultScreen />;
+        case APP_STATES.PRINTING:
+          return <PrintingScreen />;
+        case APP_STATES.COMPLETE:
+          return <CompleteScreen />;
+        default:
+          return <WelcomeScreen />;
+      }
+    })();
+    
+    // Wrap với transition tương ứng
+    const transitionType = getTransitionType(currentState);
+    
+    if (transitionType === "fade") {
+      return (
+        <Fade in={true} timeout={800}>
+          <div className="fade-in-down">{screen}</div>
+        </Fade>
+      );
+    } else if (transitionType === "grow") {
+      return (
+        <Grow in={true} timeout={600}>
+          <div>{screen}</div>
+        </Grow>
+      );
+    } else {
+      return (
+        <Slide direction="right" in={true} mountOnEnter unmountOnExit timeout={400}>
+          <div className="slide-in-right">{screen}</div>
+        </Slide>
+      );
     }
   };
   
@@ -95,7 +137,9 @@ const App = () => {
         currentState === APP_STATES.WELCOME || currentState === APP_STATES.COMPLETE ? 
         'fullscreen-container' : 'container'
       }>
-        {renderCurrentScreen()}
+        <div className="page-content">
+          {renderCurrentScreen()}
+        </div>
       </Box>
       
       {/* Error Alert */}

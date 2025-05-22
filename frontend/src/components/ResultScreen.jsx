@@ -93,10 +93,10 @@ const ResultScreen = () => {
           <Grid item xs={12} sm={6} key={index}>
             <Card 
               elevation={selectedImageIndex === index ? 8 : 3}
+              className={`image-card ${selectedImageIndex === index ? 'selected' : 'float'}`}
               sx={{
                 position: 'relative',
-                border: selectedImageIndex === index ? '3px solid #4caf50' : 'none',
-                transition: 'all 0.3s ease'
+                border: selectedImageIndex === index ? '3px solid #4caf50' : 'none'
               }}
             >
               <CardActionArea 
@@ -122,10 +122,11 @@ const ResultScreen = () => {
                       height: 40,
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      zIndex: 2
                     }}
                   >
-                    <CheckCircle sx={{ color: 'white' }} />
+                    <CheckCircle sx={{ color: 'white' }} className="check-mark" />
                   </Box>
                 )}
               </CardActionArea>
@@ -144,6 +145,7 @@ const ResultScreen = () => {
           variant="outlined"
           startIcon={<ArrowBack />}
           onClick={resetApp}
+          className="interactive-button"
         >
           Tạo mới
         </Button>
@@ -154,6 +156,7 @@ const ResultScreen = () => {
           startIcon={<Refresh />}
           onClick={() => window.location.reload()}
           sx={{ mx: 2 }}
+          className="interactive-button"
         >
           Tạo lại
         </Button>
@@ -165,6 +168,7 @@ const ResultScreen = () => {
           onClick={handlePrintConfirm}
           disabled={selectedImageIndex === null || isPrinting}
           sx={{ minWidth: 120 }}
+          className={`interactive-button ${selectedImageIndex !== null && !isPrinting ? 'pulse' : ''}`}
         >
           {isPrinting ? (
             <>

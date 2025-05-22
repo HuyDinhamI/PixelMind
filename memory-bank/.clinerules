@@ -1,0 +1,133 @@
+# Cline Rules - AI Photo Booth
+
+## Nguyên tắc phát triển
+1. **Ưu tiên trải nghiệm người dùng** - Mọi quyết định thiết kế và phát triển đều phải đặt UX lên hàng đầu, đặc biệt là sự đơn giản và trực quan
+2. **Tối ưu hóa thời gian chờ** - Giảm thiểu cảm giác chờ đợi cho người dùng bằng hoạt ảnh và phản hồi trực quan
+3. **Xử lý lỗi thân thiện** - Đảm bảo tất cả các thông báo lỗi đều dễ hiểu đối với người dùng không có kiến thức kỹ thuật
+4. **Tự động hóa tối đa** - Hạn chế sự can thiệp của người vận hành, tự động xử lý các tình huống thông thường
+5. **Phản hồi trực quan** - Mỗi hành động của người dùng đều cần có phản hồi trực quan rõ ràng
+
+## Quy ước mã nguồn
+
+### Quy ước chung
+- Sử dụng tiếng Việt cho các comments, log messages, và UI text
+- Sử dụng tiếng Anh cho tên biến, hàm, class, và mã nguồn
+- Mọi function và component phải có JSDoc hoặc docstring mô tả chức năng
+
+### Frontend
+- Sử dụng functional components và React hooks
+- Tách biệt logic và UI bằng custom hooks
+- Sử dụng Context API cho state management
+- Tổ chức thư mục theo tính năng và loại component
+- Đặt tên biến và hàm theo camelCase
+- Sử dụng Material-UI cho các components UI
+
+### Backend
+- Sử dụng các router riêng biệt cho các nhóm tính năng
+- Tách logic API routes và business services
+- Log đầy đủ thông tin cho mọi hành động quan trọng
+- Sử dụng background tasks cho các tác vụ tốn thời gian
+- Áp dụng mô hình try/except cho xử lý lỗi
+- Đặt tên biến và hàm theo snake_case
+
+## Các mẫu công việc
+
+### Xử lý tương tác Leonardo.ai API
+```python
+try:
+    # 1. Log bắt đầu yêu cầu
+    logger.info(f"Bắt đầu gửi yêu cầu đến Leonardo.ai: {operation}")
+    
+    # 2. Gọi API
+    response = leo_api_call()
+    
+    # 3. Kiểm tra kết quả
+    if response.status_code != 200:
+        logger.error(f"Lỗi từ Leonardo.ai: {response.text}")
+        raise HTTPException(status_code=response.status_code, 
+                           detail=f"Lỗi khi gọi Leonardo.ai API: {response.text}")
+    
+    # 4. Log hoàn thành
+    logger.info(f"Hoàn thành gọi Leonardo.ai API: {operation}")
+    
+    return response.json()
+except Exception as e:
+    # 5. Log lỗi và ném ngoại lệ
+    logger.error(f"Lỗi không mong đợi khi gọi Leonardo.ai: {str(e)}")
+    raise HTTPException(status_code=500, 
+                       detail=f"Lỗi hệ thống khi gọi Leonardo.ai: {str(e)}")
+```
+
+### Quản lý trạng thái Frontend
+```javascript
+// 1. Sử dụng action types rõ ràng
+dispatch({
+  type: APP_ACTIONS.ACTION_NAME,
+  payload: { 
+    key1: value1,
+    key2: value2
+  }
+});
+
+// 2. Cập nhật trạng thái trong reducer
+case APP_ACTIONS.ACTION_NAME:
+  return {
+    ...state,
+    updatedKey1: action.payload.key1,
+    updatedKey2: action.payload.key2,
+    error: null,
+    idleTime: 0  // Reset idle time cho mỗi hành động người dùng
+  };
+```
+
+### Xử lý phiên làm việc
+```python
+# 1. Tạo session_id
+session_id = str(uuid.uuid4())
+session_dir = os.path.join(TEMP_DIR, session_id)
+os.makedirs(session_dir, exist_ok=True)
+
+# 2. Lưu dữ liệu phiên
+# (code xử lý dữ liệu phiên)
+
+# 3. Dọn dẹp khi hoàn thành
+try:
+    if os.path.exists(session_dir):
+        shutil.rmtree(session_dir)
+except Exception as e:
+    logger.error(f"Lỗi khi dọn dẹp phiên {session_id}: {str(e)}")
+```
+
+## Quy trình xử lý lỗi
+
+### Frontend
+1. Hiển thị thông báo lỗi thân thiện
+2. Cung cấp tùy chọn thử lại
+3. Tự động quay lại màn hình chào mừng sau lỗi nghiêm trọng
+
+### Backend
+1. Log đầy đủ thông tin lỗi
+2. Trả về HTTP status code phù hợp
+3. Cung cấp thông báo lỗi đủ chi tiết nhưng không để lộ thông tin nhạy cảm
+
+## Các điểm đặc biệt cần lưu ý
+
+### Tự động reset
+- Ứng dụng sẽ tự động reset về màn hình chào mừng sau 60 giây không hoạt động
+- Thời gian này được đo bằng state.idleTime
+- Mỗi hành động người dùng sẽ reset thời gian này về 0
+
+### Quản lý tài nguyên
+- Các ảnh tạm thời sẽ được xóa khi phiên kết thúc
+- Cần kiểm tra và dọn dẹp định kỳ để tránh tràn ổ đĩa
+- Tất cả uploads đều được lưu trong `settings.UPLOAD_DIR`
+
+### Rate limiting
+- Leonardo.ai API có giới hạn số lượng requests
+- Cần xem xét triển khai rate limiting để tránh vượt quá quota
+
+## Thuật ngữ đặc biệt
+- **session_id**: ID duy nhất cho mỗi phiên người dùng
+- **generation_id**: ID từ Leonardo.ai cho mỗi yêu cầu tạo ảnh
+- **prompt**: Mô tả phong cách ảnh mong muốn
+- **idle timeout**: Thời gian không hoạt động trước khi reset

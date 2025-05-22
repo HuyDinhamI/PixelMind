@@ -1,0 +1,331 @@
+/* Animation và Transitions cho AI Photo Booth App */
+
+/* === TRANSITIONS GIỮA CÁC MÀN HÌNH === */
+
+/* Fade In từ trên xuống - dùng cho màn hình ban đầu */
+.fade-in-down {
+  animation: fadeInDown 0.5s ease forwards;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade In từ dưới lên - dùng cho các màn hình khác */
+.fade-in-up {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide từ phải sang - dùng cho next step */
+.slide-in-right {
+  animation: slideInRight 0.3s ease forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide từ trái sang - dùng cho trở lại */
+.slide-in-left {
+  animation: slideInLeft 0.3s ease forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Transition page chung */
+.page-transition-enter {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 200ms, transform 200ms;
+}
+
+/* === ANIMATIONS CHO CÁC COMPONENT === */
+
+/* Pulse animation - dùng cho các nút nhấn chính */
+.pulse {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.4);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(25, 118, 210, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
+  }
+}
+
+/* Shimmer effect - dùng cho skeleton loading */
+.shimmer {
+  background: #f6f7f8;
+  background-image: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 800px 104px;
+  animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+/* Float animation - dùng cho cards */
+.float {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.float:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Shake animation - dùng cho error notifications */
+.shake {
+  animation: shake 0.82s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+  10%, 90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+  20%, 80% {
+    transform: translate3d(2px, 0, 0);
+  }
+  30%, 50%, 70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+  40%, 60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
+/* === BUTTON ANIMATIONS === */
+
+/* Button hover effects */
+.interactive-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.interactive-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.interactive-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Button ripple effect */
+.interactive-button::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.4) 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.8s;
+}
+
+.interactive-button:active::after {
+  transform: scale(0, 0);
+  opacity: 0.3;
+  transition: 0s;
+}
+
+/* === SPECIAL ANIMATIONS === */
+
+/* Wave loading animation - dùng cho GeneratingScreen */
+.wave-loading {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 40px;
+}
+
+.wave-loading .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin: 0 4px;
+  background-color: #1976d2;
+  animation: wave 1.5s infinite ease-in-out;
+}
+
+.wave-loading .dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.wave-loading .dot:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.wave-loading .dot:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.wave-loading .dot:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.wave-loading .dot:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+@keyframes wave {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+/* Confetti animation - dùng cho CompleteScreen */
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #f44336;
+  animation: confetti 5s ease-in-out infinite;
+}
+
+.confetti.blue {
+  background-color: #2196f3;
+  animation-delay: 0.2s;
+}
+
+.confetti.green {
+  background-color: #4caf50;
+  animation-delay: 0.4s;
+}
+
+.confetti.yellow {
+  background-color: #ffeb3b;
+  animation-delay: 0.6s;
+}
+
+.confetti.purple {
+  background-color: #9c27b0;
+  animation-delay: 0.8s;
+}
+
+@keyframes confetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(200px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Image Gallery hover effect - dùng cho ResultScreen */
+.image-card {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  cursor: pointer;
+}
+
+.image-card:hover {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+  z-index: 1;
+}
+
+.image-card.selected {
+  transform: scale(1.05);
+  box-shadow: 0 14px 28px rgba(76, 175, 80, 0.3), 0 10px 10px rgba(76, 175, 80, 0.2);
+  border: 3px solid #4caf50;
+}
+
+.image-card.selected:hover {
+  transform: translateY(-10px) scale(1.08);
+}
+
+/* CheckMark animation - dùng cho chọn ảnh */
+.check-mark {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: draw 0.5s ease forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}

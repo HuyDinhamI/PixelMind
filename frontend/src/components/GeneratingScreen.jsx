@@ -96,13 +96,16 @@ const GeneratingScreen = () => {
           Đang tạo ảnh
         </Typography>
         
-        <Box sx={{ position: 'relative', my: 4 }}>
+        <Box sx={{ position: 'relative', my: 4, transition: 'all 0.3s ease' }}>
           <CircularProgress
             variant="determinate"
             value={progress}
             size={120}
             thickness={4}
-            sx={{ color: 'primary.main' }}
+            sx={{ 
+              color: 'primary.main',
+              transition: 'all 0.3s ease'
+            }}
           />
           <Box
             sx={{
@@ -126,13 +129,23 @@ const GeneratingScreen = () => {
         
         <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 4, mb: 2 }} />
         
-        <Typography variant="body1" sx={{ mt: 2, fontStyle: 'italic' }}>
+        <div className="wave-loading" style={{ margin: '20px 0' }}>
+          <div className="dot"></div>
+          <div className="dot"></div>
+          <div className="dot"></div>
+          <div className="dot"></div>
+          <div className="dot"></div>
+        </div>
+        
+        <Typography variant="body1" sx={{ mt: 2, fontStyle: 'italic', animation: 'fadeInUp 0.5s ease' }}>
           {statusMessage}
         </Typography>
         
-        <Typography variant="body2" sx={{ mt: 3, color: 'text.secondary' }}>
-          Vui lòng đợi trong khi AI đang biến đổi ảnh của bạn. Quá trình này mất khoảng 20-30 giây.
-        </Typography>
+        <Box sx={{ mt: 4, p: 2, bgcolor: 'rgba(25, 118, 210, 0.05)', borderRadius: 2 }} className="shimmer">
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Vui lòng đợi trong khi AI đang biến đổi ảnh của bạn. Quá trình này mất khoảng 20-30 giây.
+          </Typography>
+        </Box>
       </Paper>
     </Box>
   );
