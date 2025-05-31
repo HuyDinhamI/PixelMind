@@ -34,7 +34,21 @@ Một ứng dụng web cho phép chụp ảnh người dùng, biến đổi bằ
 
 ### Yêu cầu chung
 
-- API key từ Leonardo.ai
+- API key từ Leonardo.ai (Đăng ký tại [Leonardo.ai](https://leonardo.ai))
+
+### Cấu hình biến môi trường
+
+Dự án sử dụng file `.env` để lưu trữ các biến môi trường và API key. Vì lý do bảo mật, file này không được đưa lên GitHub.
+
+1. Sao chép file mẫu `.env.example` thành `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Chỉnh sửa file `.env` và thêm API key của bạn:
+   ```
+   LEONARDO_API_KEY="your_leonardo_api_key_here"
+   ```
 
 ### Phương pháp 1: Sử dụng Docker
 
