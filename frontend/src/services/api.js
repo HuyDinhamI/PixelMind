@@ -2,6 +2,7 @@ import axios from 'axios';
 
 // Lấy API URL từ biến môi trường hoặc dùng mặc định
 const API_URL = process.env.REACT_APP_API_URL || '/api';
+console.log("API URL được cấu hình:", API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
@@ -15,6 +16,13 @@ export const generationApi = {
   // Kết hợp upload ảnh và gửi prompt trong 1 request
   generateWithImage: async (imageBlob, prompt, numImages = 4, width = 512, height = 512) => {
     try {
+      console.log("Gọi API generateWithImage với:", {
+        endpoint: `${API_URL}/generation/generate`,
+        promptLength: prompt.length,
+        imageBlobSize: imageBlob.size,
+        numImages, width, height
+      });
+      
       const formData = new FormData();
       formData.append('file', imageBlob, 'captured_image.jpg');
       formData.append('prompt', prompt);
@@ -28,9 +36,17 @@ export const generationApi = {
         },
       });
       
+      console.log("Kết quả từ API generateWithImage:", response.data);
       return response.data;
     } catch (error) {
       console.error('Error generating images with uploaded image:', error);
+      console.log("Đường dẫn API đang gọi:", `${API_URL}/generation/generate`);
+      console.log("Thông tin lỗi chi tiết:", {
+        message: error.message,
+        statusCode: error.response?.status,
+        responseData: error.response?.data,
+        requestURL: error.config?.url
+      });
       throw error;
     }
   },
@@ -38,7 +54,9 @@ export const generationApi = {
   // Kiểm tra trạng thái của quá trình sinh hình ảnh
   checkStatus: async (sessionId) => {
     try {
+      console.log("Kiểm tra trạng thái với sessionId:", sessionId);
       const response = await api.get(`/generation/status/${sessionId}`);
+      console.log("Kết quả kiểm tra trạng thái:", response.data);
       return response.data;
     } catch (error) {
       console.error('Error checking generation status:', error);
