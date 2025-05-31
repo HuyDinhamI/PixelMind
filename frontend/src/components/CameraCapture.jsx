@@ -16,7 +16,7 @@ const CameraCapture = () => {
     facingMode: "user"
   };
 
-  const handleCapture = useCallback(async () => {
+  const handleCapture = useCallback(() => {
     setIsCapturing(true);
     try {
       const imageSrc = webcamRef.current.getScreenshot();
@@ -24,8 +24,9 @@ const CameraCapture = () => {
         throw new Error('Không thể chụp ảnh. Vui lòng thử lại.');
       }
 
-      // Lưu ảnh vào state mà không gọi API
+      // Lưu ảnh vào context state và chuyển đến màn hình nhập prompt
       captureImage(imageSrc, null);
+      console.log("Ảnh đã được lưu vào state, chuyển đến màn hình prompt");
       
     } catch (error) {
       console.error('Error capturing image:', error);

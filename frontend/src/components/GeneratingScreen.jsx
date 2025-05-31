@@ -15,10 +15,20 @@ const GeneratingScreen = () => {
   const { sessionId, receiveResults, setError } = useAppState();
   
   const checkGenerationStatus = useCallback(async () => {
+    console.log("Kiểm tra trạng thái với session_id:", sessionId);
+    
+    if (!sessionId) {
+      console.error("Session ID không tồn tại, không thể kiểm tra trạng thái");
+      setStatusMessage("Đang chờ session ID...");
+      return false;
+    }
+    
     try {
       const result = await generationApi.checkStatus(sessionId);
+      console.log("Kết quả kiểm tra trạng thái:", result);
       
       if (result.status === 'complete' && result.images) {
+        console.log("Sinh ảnh hoàn thành, chuyển đến màn hình kết quả");
         // Đã hoàn thành, chuyển đến màn hình kết quả
         receiveResults(result.images);
         return true; // Đánh dấu là đã hoàn thành

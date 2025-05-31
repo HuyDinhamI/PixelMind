@@ -40,11 +40,14 @@ const PromptInput = () => {
     
     setIsSubmitting(true);
     try {
+      console.log("Bắt đầu gửi ảnh và prompt đến API...");
+      
       // Chuyển đổi ảnh thành Blob để upload
       const imageBlob = dataURItoBlob(capturedImage);
       
       // Gọi API kết hợp để gửi cả ảnh và prompt
       const result = await generationApi.generateWithImage(imageBlob, prompt);
+      console.log("Kết quả từ API:", result);
       
       if (!result.generation_id) {
         throw new Error('Không nhận được generation ID từ server.');
