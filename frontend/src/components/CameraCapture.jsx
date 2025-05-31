@@ -24,18 +24,8 @@ const CameraCapture = () => {
         throw new Error('Không thể chụp ảnh. Vui lòng thử lại.');
       }
 
-      // Chuyển đổi ảnh thành Blob để upload
-      const imageBlob = dataURItoBlob(imageSrc);
-
-      // Upload ảnh lên server
-      const uploadResult = await generationApi.uploadImage(imageBlob);
-
-      if (uploadResult.status !== "success") {
-        throw new Error('Không thể upload ảnh. Vui lòng thử lại.');
-      }
-
-      // Cập nhật state với ảnh đã chụp và session ID
-      captureImage(imageSrc, uploadResult.session_id);
+      // Lưu ảnh vào state mà không gọi API
+      captureImage(imageSrc, null);
       
     } catch (error) {
       console.error('Error capturing image:', error);

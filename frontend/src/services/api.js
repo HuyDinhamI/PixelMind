@@ -12,32 +12,15 @@ const api = axios.create({
 
 // API cho phần tạo hình ảnh
 export const generationApi = {
-  // Upload ảnh đã chụp
-  uploadImage: async (imageBlob) => {
+  // Kết hợp upload ảnh và gửi prompt trong 1 request
+  generateWithImage: async (imageBlob, prompt, numImages = 4, width = 512, height = 512) => {
     try {
       const formData = new FormData();
       formData.append('file', imageBlob, 'captured_image.jpg');
-      
-      const response = await axios.post(`${API_URL}/generation/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
-      return response.data;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      throw error;
-    }
-  },
-  
-  // Gửi prompt để sinh hình ảnh
-  generateImages: async (sessionId, prompt, numImages = 4) => {
-    try {
-      const formData = new FormData();
-      formData.append('session_id', sessionId);
       formData.append('prompt', prompt);
       formData.append('num_images', numImages);
+      formData.append('width', width);
+      formData.append('height', height);
       
       const response = await axios.post(`${API_URL}/generation/generate`, formData, {
         headers: {
@@ -47,7 +30,7 @@ export const generationApi = {
       
       return response.data;
     } catch (error) {
-      console.error('Error generating images:', error);
+      console.error('Error generating images with uploaded image:', error);
       throw error;
     }
   },

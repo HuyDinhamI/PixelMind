@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { Send, ArrowBack } from '@mui/icons-material';
 import { useAppState } from '../context/AppStateContext';
-import { generationApi } from '../services/api';
+import { generationApi, dataURItoBlob } from '../services/api';
 
 const PromptInput = () => {
   const [prompt, setPrompt] = useState('');
@@ -33,10 +33,18 @@ const PromptInput = () => {
       return;
     }
     
+    if (!capturedImage) {
+      setError('Không tìm thấy ảnh. Vui lòng chụp lại ảnh.');
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
-      // Gọi API để gửi prompt và tạo hình ảnh
-      const result = await generationApi.generateImages(sessionId, prompt);
+      // Chuyển đổi ảnh thành Blob để upload
+      const imageBlob = dataURItoBlob(capturedImage);
+      
+      // Gọi API kết hợp để gửi cả ảnh và prompt
+      const result = await generationApi.generateWithImage(imageBlob, prompt);
       
       if (!result.generation_id) {
         throw new Error('Không nhận được generation ID từ server.');
@@ -44,6 +52,11 @@ const PromptInput = () => {
       
       // Cập nhật state với prompt và generation ID
       submitPrompt(prompt, result.generation_id);
+      
+      // Cập nhật session_id từ kết quả API
+      if (result.session_id) {
+        captureImage(capturedImage, result.session_id);
+      }
       
     } catch (error) {
       console.error('Error submitting prompt:', error);
