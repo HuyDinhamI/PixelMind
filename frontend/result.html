@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả - PixelMind</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="result-screen">
+            <div class="header">
+                <h2>🎉 Kết quả</h2>
+            </div>
+            
+            <div class="result-content">
+                <div class="comparison-container">
+                    <div class="image-comparison">
+                        <div class="before-after">
+                            <div class="image-box">
+                                <h3>Ảnh gốc</h3>
+                                <img id="originalImage" src="" alt="Original photo">
+                            </div>
+                            
+                            <div class="arrow">→</div>
+                            
+                            <div class="image-box">
+                                <h3>Ảnh đã chỉnh sửa</h3>
+                                <img id="generatedImage" src="" alt="Generated photo">
+                                <div class="image-overlay">
+                                    <button class="download-btn" onclick="downloadImage()">
+                                        ⬇️ Tải xuống
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-info">
+                    <div class="prompt-used">
+                        <h4>Yêu cầu chỉnh sửa:</h4>
+                        <p id="promptText"></p>
+                    </div>
+                    
+                    <div class="result-actions">
+                        <button class="secondary-btn" onclick="startOver()">
+                            📸 Chụp ảnh mới
+                        </button>
+                        <button class="primary-btn" onclick="editAgain()">
+                            ✨ Chỉnh sửa lại
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="tips">
+                    <h4>💡 Mẹo:</h4>
+                    <ul>
+                        <li>Bạn có thể chụp ảnh mới để thử nghiệm với các đối tượng khác</li>
+                        <li>Thử các mô tả chỉnh sửa khác nhau để có kết quả đa dạng</li>
+                        <li>Mô tả càng chi tiết thì kết quả AI càng chính xác</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+        let currentResult = null;
+        
+        // Load result when page loads
+        window.addEventListener('load', function() {
+            const resultData = localStorage.getItem('processResult');
+            if (!resultData) {
+                alert('Không tìm thấy kết quả. Vui lòng thực hiện lại.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            try {
+                currentResult = JSON.parse(resultData);
+                loadResult();
+            } catch (error) {
+                console.error('Error parsing result data:', error);
+                alert('Lỗi dữ liệu kết quả. Vui lòng thực hiện lại.');
+                window.location.href = 'index.html';
+            }
+        });
+        
+        function loadResult() {
+            if (!currentResult) return;
+            
+            // Load original image from localStorage
+            const capturedImageData = localStorage.getItem('capturedImage');
+            if (capturedImageData) {
+                document.getElementById('originalImage').src = capturedImageData;
+            }
+            
+            // Load generated image from backend
+            const backendUrl = 'http://localhost:5000';
+            document.getElementById('generatedImage').src = backendUrl + currentResult.generated_image;
+            
+            // Show prompt if available
+            const promptText = localStorage.getItem('lastPrompt') || 'Không có thông tin';
+            document.getElementById('promptText').textContent = promptText;
+        }
+        
+        function downloadImage() {
+            if (!currentResult) return;
+            
+            const backendUrl = 'http://localhost:5000';
+            const downloadUrl = backendUrl + '/api/download/' + currentResult.generated_filename;
+            
+            // Create temporary link for download
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = 'pixelmind_edited_image.jpg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function startOver() {
+            // Clear all stored data
+            localStorage.removeItem('capturedImage');
+            localStorage.removeItem('processResult');
+            localStorage.removeItem('lastPrompt');
+            
+            // Go back to start
+            window.location.href = 'index.html';
+        }
+        
+        function editAgain() {
+            // Keep the captured image, just go back to edit
+            window.location.href = 'edit.html';
+        }
+    </script>
+</body>
+</html>

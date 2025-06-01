@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera - PixelMind</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="camera-screen">
+            <div class="header">
+                <button class="back-btn" onclick="goBack()">← Quay lại</button>
+                <h2>📸 Chụp ảnh</h2>
+            </div>
+            
+            <div class="camera-container">
+                <video id="video" autoplay muted></video>
+                <canvas id="canvas" style="display: none;"></canvas>
+                
+                <div class="camera-overlay">
+                    <div class="camera-frame"></div>
+                </div>
+            </div>
+            
+            <div class="camera-controls">
+                <button id="captureBtn" class="capture-btn">
+                    <div class="capture-circle"></div>
+                </button>
+                <p>Nhấn để chụp ảnh</p>
+            </div>
+            
+            <!-- Preview modal -->
+            <div id="previewModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Xem trước ảnh</h3>
+                        <button class="close-btn" onclick="closePreview()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <img id="previewImage" src="" alt="Preview">
+                        <div class="modal-actions">
+                            <button class="secondary-btn" onclick="retakePhoto()">Chụp lại</button>
+                            <button class="primary-btn" onclick="acceptPhoto()">Sử dụng ảnh này</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+        // Camera functionality
+        let currentStream = null;
+        let capturedImageData = null;
+        
+        async function initCamera() {
+            try {
+                const video = document.getElementById('video');
+                currentStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                video.srcObject = currentStream;
+                
+                // Capture button event
+                document.getElementById('captureBtn').addEventListener('click', capturePhoto);
+                
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                alert('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.');
+            }
+        }
+        
+        function capturePhoto() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw current video frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Get image data
+            capturedImageData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Show preview
+            showPreview();
+        }
+        
+        function showPreview() {
+            const previewImage = document.getElementById('previewImage');
+            const modal = document.getElementById('previewModal');
+            
+            previewImage.src = capturedImageData;
+            modal.style.display = 'flex';
+        }
+        
+        function closePreview() {
+            document.getElementById('previewModal').style.display = 'none';
+        }
+        
+        function retakePhoto() {
+            closePreview();
+            capturedImageData = null;
+        }
+        
+        function acceptPhoto() {
+            if (capturedImageData) {
+                // Store image data and go to edit page
+                localStorage.setItem('capturedImage', capturedImageData);
+                window.location.href = 'edit.html';
+            }
+        }
+        
+        function goBack() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            window.location.href = 'index.html';
+        }
+        
+        // Initialize camera when page loads
+        window.addEventListener('load', initCamera);
+        
+        // Cleanup when page unloads
+        window.addEventListener('beforeunload', () => {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>

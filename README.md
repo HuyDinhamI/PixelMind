@@ -1,195 +1,204 @@
-# AI Photo Booth
+# PixelMind - AI Image Editor
 
-Một ứng dụng web cho phép chụp ảnh người dùng, biến đổi bằng Leonardo.ai và in ảnh đã tạo.
+Ứng dụng web chỉnh sửa ảnh thông minh sử dụng Leonardo AI. Người dùng có thể chụp ảnh, nhập mô tả chỉnh sửa, và nhận về ảnh đã được AI xử lý.
 
-![AI Photo Booth](https://via.placeholder.com/800x400?text=AI+Photo+Booth)
+## 🚀 Tính năng
 
-## Tính năng
+- **Chụp ảnh trực tiếp**: Sử dụng camera của máy tính
+- **AI Image Editing**: Tích hợp Leonardo AI để chỉnh sửa ảnh thông minh
+- **Giao diện thân thiện**: Thiết kế đơn giản, dễ sử dụng
+- **Preview & Download**: Xem trước và tải xuống kết quả
+- **Responsive**: Hoạt động tốt trên mọi thiết bị
 
-- 📸 Chụp ảnh từ camera
-- 🧠 Sinh ảnh từ Leonardo.ai
-- 🎨 Biến đổi ảnh theo nhiều phong cách khác nhau
-- 🖨️ In ảnh đã chọn
-- 🔁 Tự động reset cho nhiều người dùng
+## 🏗️ Kiến trúc
 
-## Công nghệ sử dụng
+```
+pixelmind-web/
+├── frontend/           # Frontend (HTML/CSS/JS)
+│   ├── index.html     # Màn hình chính
+│   ├── camera.html    # Giao diện camera
+│   ├── edit.html      # Giao diện chỉnh sửa
+│   ├── result.html    # Hiển thị kết quả
+│   ├── style.css      # CSS styling
+│   └── script.js      # JavaScript functions
+├── backend/           # Backend (Python Flask)
+│   ├── app.py         # Flask server
+│   ├── leonardo_api.py # Leonardo AI integration
+│   ├── requirements.txt
+│   ├── uploads/       # Thư mục ảnh upload
+│   └── results/       # Thư mục ảnh kết quả
+└── README.md
+```
 
-- **Frontend**: React, Material-UI, React Webcam
-- **Backend**: Python, FastAPI
-- **AI**: Leonardo.ai API
-- **Container**: Docker và docker-compose
-- **Web Server**: Nginx
+## 📋 Yêu cầu hệ thống
 
-## Các bước hoạt động
+- Python 3.7+
+- Camera (webcam)
+- Trình duyệt hỗ trợ WebRTC
+- Kết nối internet (cho Leonardo AI)
 
-1. Hiển thị màn hình chào mừng với các ảnh mẫu
-2. Người dùng chụp ảnh qua webcam
-3. Nhập hoặc chọn mô tả phong cách
-4. Tạo ảnh qua Leonardo.ai API
-5. Hiển thị 4 ảnh kết quả để lựa chọn
-6. In ảnh đã chọn
-7. Tự động reset để phục vụ người dùng tiếp theo
+## 🛠️ Cài đặt
 
-## Cài đặt và chạy
+### 1. Clone hoặc tải project
 
-### Yêu cầu chung
-
-- API key từ Leonardo.ai (Đăng ký tại [Leonardo.ai](https://leonardo.ai))
-
-### Cấu hình biến môi trường
-
-Dự án sử dụng file `.env` để lưu trữ các biến môi trường và API key. Vì lý do bảo mật, file này không được đưa lên GitHub.
-
-1. Sao chép file mẫu `.env.example` thành `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Chỉnh sửa file `.env` và thêm API key của bạn:
-   ```
-   LEONARDO_API_KEY="your_leonardo_api_key_here"
-   ```
-
-### Phương pháp 1: Sử dụng Docker
-
-#### Yêu cầu
-- Docker và docker-compose
-
-#### Các bước cài đặt
-
-1. Clone repository:
 ```bash
+# Nếu sử dụng git
 git clone <repository-url>
-cd pixel-mind
+cd pixelmind-web
+
+# Hoặc tải và giải nén thư mục
 ```
 
-2. Thêm API key vào file .env:
-```bash
-# Tạo hoặc chỉnh sửa file .env
-echo "LEONARDO_API_KEY=your_api_key_here" > .env
-```
-
-3. Build và chạy ứng dụng với Docker:
-```bash
-docker-compose up --build
-```
-
-4. Truy cập ứng dụng:
-   - Frontend: http://localhost
-   - Backend API: http://localhost:5000
-   - Swagger UI (API Documentation): http://localhost:5000/docs
-
-### Phương pháp 2: Cài đặt trực tiếp (không dùng Docker)
-
-#### Yêu cầu
-- Node.js 18 hoặc cao hơn
-- Python 3.9 hoặc cao hơn
-- npm hoặc yarn
-- pip
-
-#### 1. Cài đặt và chạy Backend
+### 2. Cài đặt Backend
 
 ```bash
-# Di chuyển đến thư mục backend
+# Di chuyển vào thư mục backend
 cd backend
 
-# Tạo môi trường ảo (khuyến nghị)
+# Tạo virtual environment (khuyến nghị)
 python -m venv venv
-source venv/bin/activate  # Trên Windows: venv\Scripts\activate
+
+# Kích hoạt virtual environment
+# Trên Windows:
+venv\Scripts\activate
+# Trên macOS/Linux:
+source venv/bin/activate
 
 # Cài đặt dependencies
 pip install -r requirements.txt
-
-# Tạo file .env với API key
-echo "LEONARDO_API_KEY=your_api_key_here" > .env
-
-# Tạo thư mục uploads nếu chưa tồn tại
-mkdir -p uploads
-
-# Chạy server
-uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
 ```
 
-Backend API sẽ chạy tại: http://localhost:5000
-
-#### 2. Cài đặt và chạy Frontend
+### 3. Chạy Backend
 
 ```bash
-# Mở terminal mới, di chuyển đến thư mục frontend
+# Trong thư mục backend
+python app.py
+```
+
+Backend sẽ chạy tại `http://localhost:5000`
+
+### 4. Chạy Frontend
+
+Mở file `frontend/index.html` trong trình duyệt:
+
+```bash
+# Cách 1: Mở trực tiếp
 cd frontend
+# Mở index.html bằng trình duyệt
 
-# Cài đặt dependencies
-npm install
-# hoặc
-yarn install
-
-# Cấu hình API endpoint trong .env
-echo "REACT_APP_API_URL=http://localhost:5000/api" > .env
-
-# Chạy development server
-npm start
-# hoặc
-yarn start
+# Cách 2: Sử dụng Python HTTP server (khuyến nghị)
+cd frontend
+python -m http.server 8080
+# Truy cập http://localhost:8080
 ```
 
-Frontend sẽ chạy tại: http://localhost:3000
+## 🎯 Cách sử dụng
 
-**Lưu ý:** Khi chạy không dùng Docker, frontend và backend chạy trên các port khác nhau. Bạn cần cấu hình CORS trên backend hoặc sử dụng proxy trong frontend để giao tiếp giữa chúng.
+1. **Bắt đầu**: Mở `index.html` và nhấn "Bắt đầu chụp ảnh"
 
-## Cấu trúc dự án
+2. **Chụp ảnh**: 
+   - Cho phép truy cập camera khi browser yêu cầu
+   - Nhấn nút chụp để capture ảnh
+   - Xem preview và chọn "Sử dụng ảnh này"
 
-```
-pixel-mind/
-├── backend/             # Python FastAPI backend
-│   ├── app/
-│   │   ├── api/         # API routes và services
-│   │   │   ├── routes/  # Định nghĩa endpoints
-│   │   │   └── services/# Các dịch vụ giao tiếp với API bên ngoài
-│   │   ├── core/        # Cấu hình cốt lõi
-│   │   └── main.py      # Entry point
-│   ├── Dockerfile       # Cấu hình Docker cho backend
-│   └── requirements.txt # Python dependencies
-├── frontend/            # React frontend
-│   ├── public/          # Static assets
-│   ├── src/
-│   │   ├── components/  # React components
-│   │   ├── context/     # React context
-│   │   ├── services/    # API services
-│   │   ├── App.js       # Main application component
-│   │   └── index.js     # Entry point
-│   ├── Dockerfile       # Cấu hình Docker cho frontend
-│   └── package.json     # Node.js dependencies
-├── nginx/               # Nginx configuration
-│   ├── Dockerfile       # Cấu hình Docker cho nginx
-│   └── nginx.conf       # Cấu hình nginx
-├── docker-compose.yml   # Docker Compose configuration
-├── .env                 # Environment variables
-└── README.md            # This file
+3. **Chỉnh sửa**:
+   - Nhập mô tả cách muốn chỉnh sửa ảnh
+   - Có thể sử dụng các gợi ý có sẵn
+   - Nhấn "Tạo ảnh mới"
+
+4. **Kết quả**:
+   - Chờ AI xử lý (20-30 giây)
+   - Xem so sánh ảnh gốc vs ảnh đã chỉnh sửa
+   - Tải xuống ảnh hoặc thử lại
+
+## ⚙️ Cấu hình
+
+### Leonardo AI API Key
+
+API key được hardcode trong `backend/leonardo_api.py`:
+
+```python
+self.api_key = "5605afe7-1f6d-40fd-979e-22b7f2df72ce"
 ```
 
-## Tích hợp máy in
+Để thay đổi API key, sửa dòng này trong file `leonardo_api.py`.
 
-Phiên bản hiện tại chứa code giả lập cho chức năng in. Để tích hợp với máy in thực tế:
+### Settings khác
 
-1. Chỉnh sửa `backend/app/api/services/print_service.py` để thay thế giả lập bằng kết nối thực.
-2. Tùy thuộc vào loại máy in, sử dụng driver hoặc API phù hợp (như CUPS trên Linux).
+Các settings được hardcode trong `leonardo_api.py`:
 
-## Phát triển
+- **Model**: Leonardo Creative (`6bef9f1b-29cb-40c7-b9df-32b51c1f67d3`)
+- **Size**: 512x512
+- **Guidance Scale**: 20
+- **Number of Images**: 1
 
-### Cấu trúc API
+## 🐛 Troubleshooting
 
-#### Generation API
-- `POST /api/generation/create`: Tạo hình ảnh mới từ ảnh và prompt
-- `GET /api/generation/{id}`: Lấy kết quả generation theo ID
+### Backend không khởi động
 
-#### Print API
-- `POST /api/print`: In ảnh đã chọn
+```bash
+# Kiểm tra port 5000 có bị chiếm không
+netstat -an | grep 5000
 
-### Frontend Flow
+# Kiểm tra dependencies
+pip list
 
-Ứng dụng frontend sử dụng React Context để quản lý luồng trạng thái qua các màn hình khác nhau:
-1. WelcomeScreen → CameraCapture → PromptInput → GeneratingScreen → ResultScreen → PrintingScreen → CompleteScreen
+# Kiểm tra Python version
+python --version
+```
 
-## License
+### Camera không hoạt động
 
-MIT
+- Đảm bảo browser có quyền truy cập camera
+- Thử refresh trang và cho phép lại
+- Kiểm tra camera có đang được ứng dụng khác sử dụng
+
+### Không kết nối được Leonardo AI
+
+- Kiểm tra kết nối internet
+- Kiểm tra API key có đúng không
+- Xem console log để biết lỗi cụ thể
+
+### CORS Error
+
+Nếu gặp lỗi CORS khi chạy frontend từ file://
+
+```bash
+# Chạy frontend qua HTTP server
+cd frontend
+python -m http.server 8080
+```
+
+## 🔧 Development
+
+### Thêm tính năng mới
+
+1. **Frontend**: Thêm vào các file HTML/CSS/JS trong `frontend/`
+2. **Backend**: Thêm routes mới trong `app.py`
+3. **AI Integration**: Sửa đổi `leonardo_api.py`
+
+### Debug
+
+- Backend logs: Kiểm tra terminal chạy Flask
+- Frontend logs: Mở Developer Tools > Console
+- Network: Kiểm tra tab Network trong DevTools
+
+## 📝 Ghi chú
+
+- Ứng dụng chỉ hỗ trợ chạy trên localhost
+- API key Leonardo AI có giới hạn usage
+- File ảnh được lưu tạm trong `uploads/` và `results/`
+- LocalStorage được sử dụng để lưu trạng thái giữa các trang
+
+## 📞 Hỗ trợ
+
+Nếu gặp vấn đề, hãy:
+
+1. Kiểm tra console logs
+2. Đảm bảo backend đang chạy
+3. Kiểm tra kết nối mạng
+4. Thử refresh browser
+
+---
+
+**Lưu ý**: Đây là ứng dụng demo, không nên sử dụng trong production mà chưa có các biện pháp bảo mật phù hợp.

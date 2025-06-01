@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chỉnh sửa - PixelMind</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="edit-screen">
+            <div class="header">
+                <button class="back-btn" onclick="goBack()">← Quay lại</button>
+                <h2>✨ Chỉnh sửa ảnh</h2>
+            </div>
+            
+            <div class="edit-content">
+                <div class="image-preview">
+                    <h3>Ảnh vừa chụp:</h3>
+                    <img id="capturedImage" src="" alt="Captured photo">
+                </div>
+                
+                <div class="prompt-section">
+                    <h3>Mô tả cách bạn muốn chỉnh sửa ảnh:</h3>
+                    <textarea 
+                        id="promptInput" 
+                        placeholder="Ví dụ: Thêm một chiếc mũ hồng cho chú chó, thay đổi màu áo thành xanh dương, thêm kính mát..."
+                        rows="4"
+                    ></textarea>
+                    
+                    <div class="prompt-examples">
+                        <h4>Gợi ý:</h4>
+                        <div class="example-tags">
+                            <span class="tag" onclick="addExample('Thêm một chiếc mũ đỏ')">Thêm mũ đỏ</span>
+                            <span class="tag" onclick="addExample('Thay đổi màu áo thành xanh dương')">Đổi màu áo</span>
+                            <span class="tag" onclick="addExample('Thêm kính mát thời trang')">Thêm kính mát</span>
+                            <span class="tag" onclick="addExample('Thêm nền cảnh bãi biển')">Đổi nền biển</span>
+                            <span class="tag" onclick="addExample('Làm cho ảnh trông nghệ thuật hơn')">Phong cách nghệ thuật</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="processBtn" class="process-btn" onclick="processImage()">
+                    🚀 Tạo ảnh mới
+                </button>
+            </div>
+            
+            <!-- Loading modal -->
+            <div id="loadingModal" class="modal" style="display: none;">
+                <div class="modal-content loading-content">
+                    <div class="loading-spinner"></div>
+                    <h3>Đang xử lý ảnh...</h3>
+                    <p>AI đang tạo ra phiên bản mới của ảnh theo yêu cầu của bạn. Quá trình này có thể mất 20-30 giây.</p>
+                    <div class="loading-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <span id="progressText">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+        // Load captured image when page loads
+        window.addEventListener('load', function() {
+            const capturedImageData = localStorage.getItem('capturedImage');
+            if (!capturedImageData) {
+                alert('Không tìm thấy ảnh. Vui lòng chụp ảnh lại.');
+                window.location.href = 'camera.html';
+                return;
+            }
+            
+            document.getElementById('capturedImage').src = capturedImageData;
+        });
+        
+        function addExample(text) {
+            const promptInput = document.getElementById('promptInput');
+            const currentText = promptInput.value.trim();
+            
+            if (currentText === '') {
+                promptInput.value = text;
+            } else {
+                promptInput.value = currentText + ', ' + text;
+            }
+            
+            promptInput.focus();
+        }
+        
+        function goBack() {
+            window.location.href = 'camera.html';
+        }
+        
+        async function processImage() {
+            const prompt = document.getElementById('promptInput').value.trim();
+            
+            if (!prompt) {
+                alert('Vui lòng nhập mô tả cách bạn muốn chỉnh sửa ảnh.');
+                return;
+            }
+            
+            const capturedImageData = localStorage.getItem('capturedImage');
+            if (!capturedImageData) {
+                alert('Không tìm thấy ảnh. Vui lòng chụp ảnh lại.');
+                return;
+            }
+            
+            // Save prompt for later use
+            localStorage.setItem('lastPrompt', prompt);
+            
+            // Show loading modal
+            showLoading();
+            
+            try {
+                // Convert base64 to blob
+                const response = await fetch(capturedImageData);
+                const blob = await response.blob();
+                
+                // Create form data
+                const formData = new FormData();
+                formData.append('image', blob, 'captured.jpg');
+                formData.append('prompt', prompt);
+                
+                // Send to backend
+                const result = await fetch('http://localhost:5000/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await result.json();
+                
+                hideLoading();
+                
+                if (data.success) {
+                    // Store result data and go to result page
+                    localStorage.setItem('processResult', JSON.stringify(data));
+                    window.location.href = 'result.html';
+                } else {
+                    alert('Lỗi xử lý ảnh: ' + data.error);
+                }
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error processing image:', error);
+                alert('Có lỗi xảy ra khi xử lý ảnh. Vui lòng thử lại.');
+            }
+        }
+        
+        function showLoading() {
+            document.getElementById('loadingModal').style.display = 'flex';
+            
+            // Simulate progress
+            let progress = 0;
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 5;
+                if (progress > 95) progress = 95;
+                
+                progressFill.style.width = progress + '%';
+                progressText.textContent = Math.round(progress) + '%';
+            }, 1000);
+            
+            // Store interval to clear later
+            window.loadingInterval = interval;
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingModal').style.display = 'none';
+            if (window.loadingInterval) {
+                clearInterval(window.loadingInterval);
+            }
+        }
+    </script>
+</body>
+</html>
