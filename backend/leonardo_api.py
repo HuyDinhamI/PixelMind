@@ -13,7 +13,21 @@ class LeonardoAPI:
             "content-type": "application/json",
             "authorization": self.authorization
         }
-        self.model_id = "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3"  # Leonardo Creative
+        # Sử dụng PhotoReal v2 - tốt hơn cho chỉnh sửa ảnh thực tế
+        self.model_id = "1e60896f-3c26-4296-8ecc-53e2afecc132"  # PhotoReal v2
+    
+    def enhance_prompt(self, user_prompt):
+        """Cải thiện prompt để giữ nguyên ảnh gốc và chỉ thay đổi theo yêu cầu"""
+        # Prefix để giữ nguyên composition và chất lượng
+        prefix = "High quality photo, preserve original composition and lighting, subtle enhancement, "
+        
+        # Suffix để đảm bảo ảnh thực tế và ít thay đổi
+        suffix = ", keep original colors and style, minimal changes, realistic, photorealistic"
+        
+        # Kết hợp prompt
+        enhanced = f"{prefix}{user_prompt}{suffix}"
+        
+        return enhanced
     
     def upload_image(self, image_path):
         """Upload image to Leonardo and get image ID"""
@@ -45,24 +59,32 @@ class LeonardoAPI:
         except Exception as e:
             return None, str(e)
     
-    def generate_image(self, image_path, prompt):
-        """Generate image with Leonardo AI"""
+    def generate_image(self, image_path, prompt, strength=0.3):
+        """Generate image with Leonardo AI với thông số tối ưu"""
         try:
             # Upload image first
             image_id, error = self.upload_image(image_path)
             if error:
                 return {'success': False, 'error': error}
             
-            # Generate image
+            # Cải thiện prompt
+            enhanced_prompt = self.enhance_prompt(prompt)
+            
+            # Generate image với thông số tối ưu
             url = "https://cloud.leonardo.ai/api/rest/v1/generations"
             payload = {
                 "height": 512,
                 "modelId": self.model_id,
-                "prompt": prompt,
+                "prompt": enhanced_prompt,
                 "width": 512,
                 "imagePrompts": [image_id],
-                "num_images": 1,
-                "guidance_scale": 20
+                "num_images": 2,  # Tạo 2 ảnh để có lựa chọn
+                "guidance_scale": 7,  # Giảm từ 20 xuống 7 để gần ảnh gốc hơn
+                "strength": strength,  # Mức độ thay đổi (0.1-0.8)
+                "promptMagic": True,  # Cải thiện prompt tự động
+                "photoReal": True,  # Cho ảnh thực tế
+                "num_inference_steps": 15,  # Ít step hơn = ít thay đổi
+                "presetStyle": "CINEMATIC"  # Style phù hợp với ảnh thực
             }
             
             response = requests.post(url, json=payload, headers=self.headers)
@@ -73,7 +95,7 @@ class LeonardoAPI:
             generation_id = response.json()['sdGenerationJob']['generationId']
             
             # Wait for generation to complete
-            time.sleep(20)  # Leonardo needs time to process
+            time.sleep(25)  # Tăng thời gian chờ một chút cho PhotoReal
             
             # Get results
             result_url = f"https://cloud.leonardo.ai/api/rest/v1/generations/{generation_id}"
@@ -88,22 +110,53 @@ class LeonardoAPI:
             if not images:
                 return {'success': False, 'error': 'No images generated'}
             
-            # Download and save the first image
-            img_url = images[0]["url"]
-            img_data = requests.get(img_url).content
-            
-            # Save to results folder
-            filename = f"{uuid.uuid4()}_generated.jpg"
-            result_path = os.path.join('results', filename)
-            
-            with open(result_path, 'wb') as f:
-                f.write(img_data)
+            # Download và save tất cả ảnh được tạo
+            result_images = []
+            for i, img in enumerate(images):
+                img_url = img["url"]
+                img_data = requests.get(img_url).content
+                
+                # Save to results folder
+                filename = f"{uuid.uuid4()}_generated_{i+1}.jpg"
+                result_path = os.path.join('results', filename)
+                
+                with open(result_path, 'wb') as f:
+                    f.write(img_data)
+                
+                result_images.append({
+                    'url': f'/api/result/{filename}',
+                    'filename': filename
+                })
             
             return {
                 'success': True,
-                'image_url': f'/api/result/{filename}',
-                'filename': filename
+                'images': result_images,
+                'primary_image': result_images[0],  # Ảnh chính
+                'enhanced_prompt': enhanced_prompt,  # Trả về prompt đã cải thiện
+                'settings': {
+                    'strength': strength,
+                    'guidance_scale': 7,
+                    'model': 'PhotoReal v2'
+                }
             }
             
         except Exception as e:
             return {'success': False, 'error': str(e)}
+    
+    def generate_with_custom_settings(self, image_path, prompt, settings=None):
+        """Generate image với custom settings"""
+        if settings is None:
+            settings = {}
+        
+        # Default settings
+        default_settings = {
+            'strength': 0.3,
+            'guidance_scale': 7,
+            'num_images': 2,
+            'num_inference_steps': 15
+        }
+        
+        # Merge với user settings
+        final_settings = {**default_settings, **settings}
+        
+        return self.generate_image(image_path, prompt, final_settings['strength'])

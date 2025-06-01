@@ -11,36 +11,71 @@
         <div class="result-screen">
             <div class="header">
                 <h2>🎉 Kết quả</h2>
+                <p id="resultSummary"></p>
             </div>
             
             <div class="result-content">
-                <div class="comparison-container">
-                    <div class="image-comparison">
-                        <div class="before-after">
-                            <div class="image-box">
-                                <h3>Ảnh gốc</h3>
-                                <img id="originalImage" src="" alt="Original photo">
-                            </div>
-                            
-                            <div class="arrow">→</div>
-                            
-                            <div class="image-box">
-                                <h3>Ảnh đã chỉnh sửa</h3>
-                                <img id="generatedImage" src="" alt="Generated photo">
-                                <div class="image-overlay">
-                                    <button class="download-btn" onclick="downloadImage()">
-                                        ⬇️ Tải xuống
-                                    </button>
+                <!-- Original Image -->
+                <div class="original-section">
+                    <h3>📸 Ảnh gốc</h3>
+                    <div class="original-container">
+                        <img id="originalImage" src="" alt="Original photo">
+                    </div>
+                </div>
+                
+                <!-- Generated Images Gallery -->
+                <div class="generated-section">
+                    <h3>✨ Ảnh đã tạo</h3>
+                    <div class="generated-gallery" id="generatedGallery">
+                        <!-- Images will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Selected Image for Comparison -->
+                <div class="comparison-section" id="comparisonSection" style="display: none;">
+                    <h3>🔍 So sánh chi tiết</h3>
+                    <div class="comparison-container">
+                        <div class="image-comparison">
+                            <div class="before-after">
+                                <div class="image-box">
+                                    <h4>Ảnh gốc</h4>
+                                    <img id="compareOriginal" src="" alt="Original photo">
+                                </div>
+                                
+                                <div class="arrow">→</div>
+                                
+                                <div class="image-box">
+                                    <h4>Ảnh đã chỉnh sửa</h4>
+                                    <img id="compareGenerated" src="" alt="Generated photo">
+                                    <div class="image-overlay">
+                                        <button class="download-btn" onclick="downloadSelectedImage()">
+                                            ⬇️ Tải xuống
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
+                <!-- Result Information -->
                 <div class="result-info">
-                    <div class="prompt-used">
-                        <h4>Yêu cầu chỉnh sửa:</h4>
-                        <p id="promptText"></p>
+                    <div class="prompt-section">
+                        <h4>📝 Thông tin xử lý:</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <strong>Mô tả gốc:</strong>
+                                <p id="originalPrompt"></p>
+                            </div>
+                            <div class="info-item" id="enhancedPromptSection" style="display: none;">
+                                <strong>Mô tả đã tối ưu:</strong>
+                                <p id="enhancedPrompt"></p>
+                            </div>
+                            <div class="info-item">
+                                <strong>Cài đặt sử dụng:</strong>
+                                <div id="settingsInfo"></div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="result-actions">
@@ -50,15 +85,19 @@
                         <button class="primary-btn" onclick="editAgain()">
                             ✨ Chỉnh sửa lại
                         </button>
+                        <button class="tertiary-btn" onclick="downloadAll()" id="downloadAllBtn" style="display: none;">
+                            📦 Tải tất cả
+                        </button>
                     </div>
                 </div>
                 
                 <div class="tips">
-                    <h4>💡 Mẹo:</h4>
+                    <h4>💡 Mẹo sử dụng:</h4>
                     <ul>
-                        <li>Bạn có thể chụp ảnh mới để thử nghiệm với các đối tượng khác</li>
-                        <li>Thử các mô tả chỉnh sửa khác nhau để có kết quả đa dạng</li>
-                        <li>Mô tả càng chi tiết thì kết quả AI càng chính xác</li>
+                        <li><strong>PhotoReal v2:</strong> Model tối ưu cho ảnh thực tế, giữ nguyên chi tiết gốc</li>
+                        <li><strong>Mức độ thay đổi thấp:</strong> Giúp ảnh sinh ra gần với bản gốc hơn</li>
+                        <li><strong>Nhiều lựa chọn:</strong> Tạo nhiều ảnh để chọn ra kết quả tốt nhất</li>
+                        <li><strong>Prompt engineering:</strong> Hệ thống tự động tối ưu mô tả của bạn</li>
                     </ul>
                 </div>
             </div>
@@ -68,12 +107,13 @@
     <script src="script.js"></script>
     <script>
         let currentResult = null;
+        let selectedImageIndex = 0;
         
         // Load result when page loads
         window.addEventListener('load', function() {
             const resultData = localStorage.getItem('processResult');
             if (!resultData) {
-                alert('Không tìm thấy kết quả. Vui lòng thực hiện lại.');
+                PixelMind.showNotification('Không tìm thấy kết quả. Vui lòng thực hiện lại.', 'error');
                 window.location.href = 'index.html';
                 return;
             }
@@ -83,7 +123,7 @@
                 loadResult();
             } catch (error) {
                 console.error('Error parsing result data:', error);
-                alert('Lỗi dữ liệu kết quả. Vui lòng thực hiện lại.');
+                PixelMind.showNotification('Lỗi dữ liệu kết quả. Vui lòng thực hiện lại.', 'error');
                 window.location.href = 'index.html';
             }
         });
@@ -95,37 +135,138 @@
             const capturedImageData = localStorage.getItem('capturedImage');
             if (capturedImageData) {
                 document.getElementById('originalImage').src = capturedImageData;
+                document.getElementById('compareOriginal').src = capturedImageData;
             }
             
-            // Load generated image from backend
-            const backendUrl = 'http://localhost:5000';
-            document.getElementById('generatedImage').src = backendUrl + currentResult.generated_image;
+            // Show result summary
+            const totalImages = currentResult.total_images || 1;
+            document.getElementById('resultSummary').textContent = 
+                `Đã tạo thành công ${totalImages} ảnh với PhotoReal v2`;
             
-            // Show prompt if available
-            const promptText = localStorage.getItem('lastPrompt') || 'Không có thông tin';
-            document.getElementById('promptText').textContent = promptText;
+            // Load generated images gallery
+            loadGeneratedGallery();
+            
+            // Load result information
+            loadResultInfo();
+            
+            // Show download all button if multiple images
+            if (totalImages > 1) {
+                document.getElementById('downloadAllBtn').style.display = 'inline-block';
+            }
         }
         
-        function downloadImage() {
+        function loadGeneratedGallery() {
+            const gallery = document.getElementById('generatedGallery');
+            const images = currentResult.generated_images || [currentResult.primary_image];
+            
+            gallery.innerHTML = images.map((image, index) => `
+                <div class="generated-item ${index === 0 ? 'selected' : ''}" onclick="selectImage(${index})">
+                    <img src="${PixelMind.API_BASE_URL}${image.url}" alt="Generated ${index + 1}">
+                    <div class="image-number">${index + 1}</div>
+                    <div class="selection-indicator">
+                        <span class="checkmark">✓</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Auto-select first image
+            selectImage(0);
+        }
+        
+        function selectImage(index) {
+            // Update selection in gallery
+            const items = document.querySelectorAll('.generated-item');
+            items.forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+            
+            // Update comparison view
+            selectedImageIndex = index;
+            const images = currentResult.generated_images || [currentResult.primary_image];
+            const selectedImage = images[index];
+            
+            document.getElementById('compareGenerated').src = `${PixelMind.API_BASE_URL}${selectedImage.url}`;
+            
+            // Show comparison section
+            document.getElementById('comparisonSection').style.display = 'block';
+            
+            // Scroll to comparison
+            document.getElementById('comparisonSection').scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+        }
+        
+        function loadResultInfo() {
+            // Original prompt
+            const originalPrompt = localStorage.getItem('lastPrompt') || 'Không có thông tin';
+            document.getElementById('originalPrompt').textContent = originalPrompt;
+            
+            // Enhanced prompt (if available)
+            if (currentResult.enhanced_prompt && currentResult.enhanced_prompt !== originalPrompt) {
+                document.getElementById('enhancedPrompt').textContent = currentResult.enhanced_prompt;
+                document.getElementById('enhancedPromptSection').style.display = 'block';
+            }
+            
+            // Settings info
+            const settings = currentResult.settings || {};
+            const settingsHTML = `
+                <div class="settings-display">
+                    <span><strong>Model:</strong> ${settings.model || 'PhotoReal v2'}</span>
+                    <span><strong>Mức độ thay đổi:</strong> ${Math.round((settings.strength || 0.3) * 100)}%</span>
+                    <span><strong>Guidance Scale:</strong> ${settings.guidance_scale || 7}</span>
+                </div>
+            `;
+            document.getElementById('settingsInfo').innerHTML = settingsHTML;
+        }
+        
+        function downloadSelectedImage() {
             if (!currentResult) return;
             
-            const backendUrl = 'http://localhost:5000';
-            const downloadUrl = backendUrl + '/api/download/' + currentResult.generated_filename;
+            const images = currentResult.generated_images || [currentResult.primary_image];
+            const selectedImage = images[selectedImageIndex];
+            
+            const downloadUrl = `${PixelMind.API_BASE_URL}/api/download/${selectedImage.filename}`;
             
             // Create temporary link for download
             const link = document.createElement('a');
             link.href = downloadUrl;
-            link.download = 'pixelmind_edited_image.jpg';
+            link.download = `pixelmind_edited_${selectedImageIndex + 1}.jpg`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            PixelMind.showNotification('Đang tải ảnh...', 'success');
+        }
+        
+        function downloadAll() {
+            if (!currentResult) return;
+            
+            const images = currentResult.generated_images || [currentResult.primary_image];
+            
+            PixelMind.showNotification(`Đang tải ${images.length} ảnh...`, 'info');
+            
+            images.forEach((image, index) => {
+                setTimeout(() => {
+                    const downloadUrl = `${PixelMind.API_BASE_URL}/api/download/${image.filename}`;
+                    
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = `pixelmind_edited_${index + 1}.jpg`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }, index * 1000); // Stagger downloads by 1 second
+            });
         }
         
         function startOver() {
             // Clear all stored data
-            localStorage.removeItem('capturedImage');
-            localStorage.removeItem('processResult');
-            localStorage.removeItem('lastPrompt');
+            PixelMind.clearAllData();
             
             // Go back to start
             window.location.href = 'index.html';
@@ -135,6 +276,21 @@
             // Keep the captured image, just go back to edit
             window.location.href = 'edit.html';
         }
+        
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            const images = currentResult?.generated_images || [currentResult?.primary_image];
+            if (!images) return;
+            
+            if (e.key === 'ArrowLeft' && selectedImageIndex > 0) {
+                selectImage(selectedImageIndex - 1);
+            } else if (e.key === 'ArrowRight' && selectedImageIndex < images.length - 1) {
+                selectImage(selectedImageIndex + 1);
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                downloadSelectedImage();
+            }
+        });
     </script>
 </body>
 </html>
