@@ -1,12 +1,7 @@
-from flask import Flask, request, jsonify, send_from_directory, send_file
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 import uuid
-import json
-import requests
-import time
-import qrcode
-from io import BytesIO
 import logging
 from leonardo_api import LeonardoAPI
 
@@ -130,51 +125,15 @@ def download_image(filename):
     logger.info(f"Download requested for: {filename}")
     return send_from_directory(RESULT_FOLDER, filename, as_attachment=True)
 
-@app.route('/api/qr/<filename>')
-def generate_qr_code(filename):
-    """Tạo QR code cho download link"""
-    logger.info(f"QR code requested for: {filename}")
-    
-    try:
-        # Tạo download URL
-        download_url = f"{request.url_root}api/download/{filename}"
-        logger.info(f"QR download URL: {download_url}")
-        
-        # Generate QR code
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(download_url)
-        qr.make(fit=True)
-        
-        # Tạo image
-        img = qr.make_image(fill_color="black", back_color="white")
-        
-        # Convert to bytes để return
-        img_io = BytesIO()
-        img.save(img_io, 'PNG')
-        img_io.seek(0)
-        
-        logger.info("QR code generated successfully")
-        return send_file(img_io, mimetype='image/png')
-        
-    except Exception as e:
-        logger.error(f"QR generation failed: {str(e)}")
-        return jsonify({'error': f'QR generation failed: {str(e)}'}), 500
-
 @app.route('/health')
 def health():
     logger.info("Health check requested")
     return jsonify({
         'status': 'healthy',
-        'leonardo_model': 'PhotoReal v2',
+        'leonardo_model': 'Leonardo Creative',
         'optimized_settings': True,
         'version': '2.1',
-        'qr_enabled': True,
-        'features': ['simple_edit', 'qr_download', 'optimized_defaults'],
+        'features': ['simple_edit', 'optimized_defaults'],
         'logging_enabled': True
     })
 

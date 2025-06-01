@@ -34,9 +34,6 @@
                                         <button class="download-btn" onclick="downloadImage()">
                                             ⬇️ Tải xuống
                                         </button>
-                                        <button class="qr-btn" onclick="showQRCode()" title="QR Code để tải về điện thoại">
-                                            📱 QR Code
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -60,20 +57,6 @@
                     <button class="primary-btn" onclick="editAgain()">
                         ✨ Chỉnh sửa lại
                     </button>
-                </div>
-            </div>
-            
-            <!-- QR Code Modal -->
-            <div id="qrModal" class="modal" style="display: none;">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>📱 Quét QR để tải về điện thoại</h3>
-                        <button class="close-btn" onclick="closeQRModal()">×</button>
-                    </div>
-                    <div class="qr-container">
-                        <img id="qrCodeImage" src="" alt="QR Code">
-                        <p>Quét mã QR này để tải ảnh trực tiếp về điện thoại</p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -177,21 +160,6 @@
             PixelMind.showNotification('Đang tải ảnh...', 'success');
         }
         
-        function showQRCode() {
-            if (!currentResult) return;
-            
-            const images = currentResult.generated_images || [currentResult.primary_image];
-            const selectedImage = images[selectedImageIndex];
-            
-            const qrUrl = `${PixelMind.API_BASE_URL}/api/qr/${selectedImage.filename}`;
-            document.getElementById('qrCodeImage').src = qrUrl;
-            document.getElementById('qrModal').style.display = 'flex';
-        }
-        
-        function closeQRModal() {
-            document.getElementById('qrModal').style.display = 'none';
-        }
-        
         function startOver() {
             // Clear all stored data
             PixelMind.clearAllData();
@@ -203,14 +171,6 @@
         function editAgain() {
             // Keep the captured image, just go back to edit
             window.location.href = 'edit.html';
-        }
-        
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('qrModal');
-            if (event.target === modal) {
-                closeQRModal();
-            }
         }
         
         // Keyboard navigation
@@ -225,8 +185,6 @@
             } else if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 downloadImage();
-            } else if (e.key === 'Escape') {
-                closeQRModal();
             }
         });
     </script>
