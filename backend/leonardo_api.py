@@ -134,13 +134,8 @@ class LeonardoAPI:
                 "prompt": enhanced_prompt,
                 "width": 512,
                 "imagePrompts": [image_id],
-                "num_images": 2,  # Tạo 2 ảnh để có lựa chọn
-                "guidance_scale": 7,  # Optimized value
-                "strength": strength,  # Mức độ thay đổi (default 0.3)
-                "promptMagic": True,  # Cải thiện prompt tự động
-                "photoReal": True,  # Cho ảnh thực tế
-                "num_inference_steps": 15,  # Optimized steps
-                "presetStyle": "CINEMATIC"  # Style phù hợp với ảnh thực
+                "num_images": 1,  # Tạo 2 ảnh để có lựa chọn
+                
             }
             
             logger.info(f"Generation URL: {url}")

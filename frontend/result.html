@@ -15,41 +15,27 @@
             </div>
             
             <div class="result-content">
-                <!-- Original Image -->
-                <div class="original-section">
-                    <h3>📸 Ảnh gốc</h3>
-                    <div class="original-container">
-                        <img id="originalImage" src="" alt="Original photo">
-                    </div>
-                </div>
-                
-                <!-- Generated Images Gallery -->
-                <div class="generated-section">
-                    <h3>✨ Ảnh đã tạo</h3>
-                    <div class="generated-gallery" id="generatedGallery">
-                        <!-- Images will be loaded here -->
-                    </div>
-                </div>
-                
-                <!-- Selected Image for Comparison -->
-                <div class="comparison-section" id="comparisonSection" style="display: none;">
-                    <h3>🔍 So sánh chi tiết</h3>
+                <!-- Before/After Comparison -->
+                <div class="comparison-main">
                     <div class="comparison-container">
                         <div class="image-comparison">
                             <div class="before-after">
                                 <div class="image-box">
-                                    <h4>Ảnh gốc</h4>
-                                    <img id="compareOriginal" src="" alt="Original photo">
+                                    <h3>📸 Ảnh gốc</h3>
+                                    <img id="originalImage" src="" alt="Original photo">
                                 </div>
                                 
                                 <div class="arrow">→</div>
                                 
                                 <div class="image-box">
-                                    <h4>Ảnh đã chỉnh sửa</h4>
-                                    <img id="compareGenerated" src="" alt="Generated photo">
+                                    <h3>✨ Ảnh đã chỉnh sửa</h3>
+                                    <img id="generatedImage" src="" alt="Generated photo">
                                     <div class="image-overlay">
-                                        <button class="download-btn" onclick="downloadSelectedImage()">
+                                        <button class="download-btn" onclick="downloadImage()">
                                             ⬇️ Tải xuống
+                                        </button>
+                                        <button class="qr-btn" onclick="showQRCode()" title="QR Code để tải về điện thoại">
+                                            📱 QR Code
                                         </button>
                                     </div>
                                 </div>
@@ -58,47 +44,36 @@
                     </div>
                 </div>
                 
-                <!-- Result Information -->
-                <div class="result-info">
-                    <div class="prompt-section">
-                        <h4>📝 Thông tin xử lý:</h4>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <strong>Mô tả gốc:</strong>
-                                <p id="originalPrompt"></p>
-                            </div>
-                            <div class="info-item" id="enhancedPromptSection" style="display: none;">
-                                <strong>Mô tả đã tối ưu:</strong>
-                                <p id="enhancedPrompt"></p>
-                            </div>
-                            <div class="info-item">
-                                <strong>Cài đặt sử dụng:</strong>
-                                <div id="settingsInfo"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="result-actions">
-                        <button class="secondary-btn" onclick="startOver()">
-                            📸 Chụp ảnh mới
-                        </button>
-                        <button class="primary-btn" onclick="editAgain()">
-                            ✨ Chỉnh sửa lại
-                        </button>
-                        <button class="tertiary-btn" onclick="downloadAll()" id="downloadAllBtn" style="display: none;">
-                            📦 Tải tất cả
-                        </button>
+                <!-- Multiple Results Gallery (if available) -->
+                <div class="generated-section" id="generatedSection" style="display: none;">
+                    <h3>🎨 Lựa chọn khác</h3>
+                    <div class="generated-gallery" id="generatedGallery">
+                        <!-- Additional images will be loaded here -->
                     </div>
                 </div>
                 
-                <div class="tips">
-                    <h4>💡 Mẹo sử dụng:</h4>
-                    <ul>
-                        <li><strong>PhotoReal v2:</strong> Model tối ưu cho ảnh thực tế, giữ nguyên chi tiết gốc</li>
-                        <li><strong>Mức độ thay đổi thấp:</strong> Giúp ảnh sinh ra gần với bản gốc hơn</li>
-                        <li><strong>Nhiều lựa chọn:</strong> Tạo nhiều ảnh để chọn ra kết quả tốt nhất</li>
-                        <li><strong>Prompt engineering:</strong> Hệ thống tự động tối ưu mô tả của bạn</li>
-                    </ul>
+                <!-- Actions -->
+                <div class="result-actions">
+                    <button class="secondary-btn" onclick="startOver()">
+                        📸 Chụp ảnh mới
+                    </button>
+                    <button class="primary-btn" onclick="editAgain()">
+                        ✨ Chỉnh sửa lại
+                    </button>
+                </div>
+            </div>
+            
+            <!-- QR Code Modal -->
+            <div id="qrModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>📱 Quét QR để tải về điện thoại</h3>
+                        <button class="close-btn" onclick="closeQRModal()">×</button>
+                    </div>
+                    <div class="qr-container">
+                        <img id="qrCodeImage" src="" alt="QR Code">
+                        <p>Quét mã QR này để tải ảnh trực tiếp về điện thoại</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -135,42 +110,35 @@
             const capturedImageData = localStorage.getItem('capturedImage');
             if (capturedImageData) {
                 document.getElementById('originalImage').src = capturedImageData;
-                document.getElementById('compareOriginal').src = capturedImageData;
             }
             
             // Show result summary
             const totalImages = currentResult.total_images || 1;
             document.getElementById('resultSummary').textContent = 
-                `Đã tạo thành công ${totalImages} ảnh với PhotoReal v2`;
+                `Đã tạo thành công ${totalImages} ảnh bằng AI`;
             
-            // Load generated images gallery
-            loadGeneratedGallery();
+            // Load primary generated image
+            const primaryImage = currentResult.primary_image || currentResult.generated_images[0];
+            document.getElementById('generatedImage').src = `${PixelMind.API_BASE_URL}${primaryImage.url}`;
             
-            // Load result information
-            loadResultInfo();
-            
-            // Show download all button if multiple images
-            if (totalImages > 1) {
-                document.getElementById('downloadAllBtn').style.display = 'inline-block';
+            // Show additional images if available
+            if (currentResult.generated_images && currentResult.generated_images.length > 1) {
+                loadAdditionalImages();
             }
         }
         
-        function loadGeneratedGallery() {
+        function loadAdditionalImages() {
+            document.getElementById('generatedSection').style.display = 'block';
+            
             const gallery = document.getElementById('generatedGallery');
-            const images = currentResult.generated_images || [currentResult.primary_image];
+            const images = currentResult.generated_images;
             
             gallery.innerHTML = images.map((image, index) => `
                 <div class="generated-item ${index === 0 ? 'selected' : ''}" onclick="selectImage(${index})">
-                    <img src="${PixelMind.API_BASE_URL}${image.url}" alt="Generated ${index + 1}">
+                    <img src="${PixelMind.API_BASE_URL}${image.url}" alt="Lựa chọn ${index + 1}">
                     <div class="image-number">${index + 1}</div>
-                    <div class="selection-indicator">
-                        <span class="checkmark">✓</span>
-                    </div>
                 </div>
             `).join('');
-            
-            // Auto-select first image
-            selectImage(0);
         }
         
         function selectImage(index) {
@@ -184,47 +152,13 @@
                 }
             });
             
-            // Update comparison view
+            // Update main display
             selectedImageIndex = index;
-            const images = currentResult.generated_images || [currentResult.primary_image];
-            const selectedImage = images[index];
-            
-            document.getElementById('compareGenerated').src = `${PixelMind.API_BASE_URL}${selectedImage.url}`;
-            
-            // Show comparison section
-            document.getElementById('comparisonSection').style.display = 'block';
-            
-            // Scroll to comparison
-            document.getElementById('comparisonSection').scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
-            });
+            const selectedImage = currentResult.generated_images[index];
+            document.getElementById('generatedImage').src = `${PixelMind.API_BASE_URL}${selectedImage.url}`;
         }
         
-        function loadResultInfo() {
-            // Original prompt
-            const originalPrompt = localStorage.getItem('lastPrompt') || 'Không có thông tin';
-            document.getElementById('originalPrompt').textContent = originalPrompt;
-            
-            // Enhanced prompt (if available)
-            if (currentResult.enhanced_prompt && currentResult.enhanced_prompt !== originalPrompt) {
-                document.getElementById('enhancedPrompt').textContent = currentResult.enhanced_prompt;
-                document.getElementById('enhancedPromptSection').style.display = 'block';
-            }
-            
-            // Settings info
-            const settings = currentResult.settings || {};
-            const settingsHTML = `
-                <div class="settings-display">
-                    <span><strong>Model:</strong> ${settings.model || 'PhotoReal v2'}</span>
-                    <span><strong>Mức độ thay đổi:</strong> ${Math.round((settings.strength || 0.3) * 100)}%</span>
-                    <span><strong>Guidance Scale:</strong> ${settings.guidance_scale || 7}</span>
-                </div>
-            `;
-            document.getElementById('settingsInfo').innerHTML = settingsHTML;
-        }
-        
-        function downloadSelectedImage() {
+        function downloadImage() {
             if (!currentResult) return;
             
             const images = currentResult.generated_images || [currentResult.primary_image];
@@ -235,7 +169,7 @@
             // Create temporary link for download
             const link = document.createElement('a');
             link.href = downloadUrl;
-            link.download = `pixelmind_edited_${selectedImageIndex + 1}.jpg`;
+            link.download = `pixelmind_edited.jpg`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -243,25 +177,19 @@
             PixelMind.showNotification('Đang tải ảnh...', 'success');
         }
         
-        function downloadAll() {
+        function showQRCode() {
             if (!currentResult) return;
             
             const images = currentResult.generated_images || [currentResult.primary_image];
+            const selectedImage = images[selectedImageIndex];
             
-            PixelMind.showNotification(`Đang tải ${images.length} ảnh...`, 'info');
-            
-            images.forEach((image, index) => {
-                setTimeout(() => {
-                    const downloadUrl = `${PixelMind.API_BASE_URL}/api/download/${image.filename}`;
-                    
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    link.download = `pixelmind_edited_${index + 1}.jpg`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                }, index * 1000); // Stagger downloads by 1 second
-            });
+            const qrUrl = `${PixelMind.API_BASE_URL}/api/qr/${selectedImage.filename}`;
+            document.getElementById('qrCodeImage').src = qrUrl;
+            document.getElementById('qrModal').style.display = 'flex';
+        }
+        
+        function closeQRModal() {
+            document.getElementById('qrModal').style.display = 'none';
         }
         
         function startOver() {
@@ -277,7 +205,15 @@
             window.location.href = 'edit.html';
         }
         
-        // Add keyboard navigation
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('qrModal');
+            if (event.target === modal) {
+                closeQRModal();
+            }
+        }
+        
+        // Keyboard navigation
         document.addEventListener('keydown', function(e) {
             const images = currentResult?.generated_images || [currentResult?.primary_image];
             if (!images) return;
@@ -288,7 +224,9 @@
                 selectImage(selectedImageIndex + 1);
             } else if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                downloadSelectedImage();
+                downloadImage();
+            } else if (e.key === 'Escape') {
+                closeQRModal();
             }
         });
     </script>
