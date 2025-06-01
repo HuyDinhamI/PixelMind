@@ -60,7 +60,7 @@ class LeonardoAPI:
             return None, str(e)
     
     def generate_image(self, image_path, prompt, strength=0.3):
-        """Generate image with Leonardo AI với thông số tối ưu"""
+        """Generate image with Leonardo AI với thông số tối ưu và đơn giản"""
         try:
             # Upload image first
             image_id, error = self.upload_image(image_path)
@@ -70,7 +70,7 @@ class LeonardoAPI:
             # Cải thiện prompt
             enhanced_prompt = self.enhance_prompt(prompt)
             
-            # Generate image với thông số tối ưu
+            # Generate image với thông số tối ưu cố định
             url = "https://cloud.leonardo.ai/api/rest/v1/generations"
             payload = {
                 "height": 512,
@@ -79,11 +79,11 @@ class LeonardoAPI:
                 "width": 512,
                 "imagePrompts": [image_id],
                 "num_images": 2,  # Tạo 2 ảnh để có lựa chọn
-                "guidance_scale": 7,  # Giảm từ 20 xuống 7 để gần ảnh gốc hơn
-                "strength": strength,  # Mức độ thay đổi (0.1-0.8)
+                "guidance_scale": 7,  # Optimized value
+                "strength": strength,  # Mức độ thay đổi (default 0.3)
                 "promptMagic": True,  # Cải thiện prompt tự động
                 "photoReal": True,  # Cho ảnh thực tế
-                "num_inference_steps": 15,  # Ít step hơn = ít thay đổi
+                "num_inference_steps": 15,  # Optimized steps
                 "presetStyle": "CINEMATIC"  # Style phù hợp với ảnh thực
             }
             
@@ -95,7 +95,7 @@ class LeonardoAPI:
             generation_id = response.json()['sdGenerationJob']['generationId']
             
             # Wait for generation to complete
-            time.sleep(25)  # Tăng thời gian chờ một chút cho PhotoReal
+            time.sleep(25)  # Optimized wait time
             
             # Get results
             result_url = f"https://cloud.leonardo.ai/api/rest/v1/generations/{generation_id}"
@@ -136,27 +136,11 @@ class LeonardoAPI:
                 'settings': {
                     'strength': strength,
                     'guidance_scale': 7,
-                    'model': 'PhotoReal v2'
+                    'num_images': 2,
+                    'model': 'PhotoReal v2',
+                    'optimized': True
                 }
             }
             
         except Exception as e:
             return {'success': False, 'error': str(e)}
-    
-    def generate_with_custom_settings(self, image_path, prompt, settings=None):
-        """Generate image với custom settings"""
-        if settings is None:
-            settings = {}
-        
-        # Default settings
-        default_settings = {
-            'strength': 0.3,
-            'guidance_scale': 7,
-            'num_images': 2,
-            'num_inference_steps': 15
-        }
-        
-        # Merge với user settings
-        final_settings = {**default_settings, **settings}
-        
-        return self.generate_image(image_path, prompt, final_settings['strength'])

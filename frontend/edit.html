@@ -31,50 +31,18 @@
                     <div class="prompt-examples">
                         <h4>Gợi ý:</h4>
                         <div class="example-tags" id="exampleTags">
-                            <!-- Will be loaded from API -->
+                            <span class="tag" onclick="addExample('thêm ánh sáng ấm áp')">thêm ánh sáng ấm áp</span>
+                            <span class="tag" onclick="addExample('làm sáng và rõ nét hơn')">làm sáng và rõ nét hơn</span>
+                            <span class="tag" onclick="addExample('thay đổi thành phong cách vintage')">thay đổi thành phong cách vintage</span>
+                            <span class="tag" onclick="addExample('làm ảnh trở nên nghệ thuật hơn')">làm ảnh trở nên nghệ thuật hơn</span>
+                            <span class="tag" onclick="addExample('cải thiện chất lượng ảnh')">cải thiện chất lượng ảnh</span>
+                            <span class="tag" onclick="addExample('thêm hiệu ứng bokeh')">thêm hiệu ứng bokeh</span>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Advanced Settings -->
-                <div class="settings-section">
-                    <div class="settings-header" onclick="toggleSettings()">
-                        <h4>⚙️ Cài đặt nâng cao</h4>
-                        <span id="settingsToggle">▼</span>
-                    </div>
-                    
-                    <div id="advancedSettings" class="settings-content">
-                        <div class="setting-item">
-                            <label for="strengthSlider">Mức độ thay đổi:</label>
-                            <div class="slider-container">
-                                <input type="range" id="strengthSlider" min="0.1" max="0.8" step="0.1" value="0.3">
-                                <span id="strengthValue">30%</span>
-                            </div>
-                            <p class="setting-description">Mức độ thay đổi so với ảnh gốc (thấp = ít thay đổi)</p>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="guidanceSlider">Mức độ tuân theo mô tả:</label>
-                            <div class="slider-container">
-                                <input type="range" id="guidanceSlider" min="3" max="15" step="1" value="7">
-                                <span id="guidanceValue">7</span>
-                            </div>
-                            <p class="setting-description">Mức độ AI tuân theo mô tả của bạn</p>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <label for="numImagesSlider">Số lượng ảnh tạo:</label>
-                            <div class="slider-container">
-                                <input type="range" id="numImagesSlider" min="1" max="4" step="1" value="2">
-                                <span id="numImagesValue">2</span>
-                            </div>
-                            <p class="setting-description">Số lượng ảnh được tạo để lựa chọn</p>
-                        </div>
-                        
-                        <div class="model-info">
-                            <p><strong>Model:</strong> PhotoReal v2 (Tối ưu cho ảnh thực tế)</p>
-                        </div>
-                    </div>
+                <div class="model-info">
+                    <p><strong>✨ Sử dụng PhotoReal v2</strong> - Model AI tối ưu cho ảnh thực tế, giữ nguyên chi tiết gốc và chất lượng cao</p>
                 </div>
                 
                 <button id="processBtn" class="process-btn" onclick="processImage()">
@@ -87,7 +55,7 @@
                 <div class="modal-content loading-content">
                     <div class="loading-spinner"></div>
                     <h3>Đang xử lý ảnh...</h3>
-                    <p id="loadingDescription">AI đang tạo ra phiên bản mới của ảnh theo yêu cầu của bạn. Quá trình này có thể mất 25-30 giây.</p>
+                    <p id="loadingDescription">AI đang tạo ra 2 phiên bản mới của ảnh theo yêu cầu của bạn. Quá trình này có thể mất 25-30 giây.</p>
                     <div class="loading-progress">
                         <div class="progress-bar">
                             <div class="progress-fill" id="progressFill"></div>
@@ -105,10 +73,8 @@
     
     <script src="script.js"></script>
     <script>
-        let apiSettings = {};
-        
-        // Load captured image and settings when page loads
-        window.addEventListener('load', async function() {
+        // Load captured image when page loads
+        window.addEventListener('load', function() {
             const capturedImageData = localStorage.getItem('capturedImage');
             if (!capturedImageData) {
                 PixelMind.showNotification('Không tìm thấy ảnh. Vui lòng chụp ảnh lại.', 'error');
@@ -118,97 +84,12 @@
             
             document.getElementById('capturedImage').src = capturedImageData;
             
-            // Load settings from API
-            await loadAPISettings();
-            
-            // Setup slider listeners
-            setupSliderListeners();
-            
             // Load saved prompt if any
             const savedPrompt = PixelMind.getSavedPrompt();
             if (savedPrompt) {
                 document.getElementById('promptInput').value = savedPrompt;
             }
         });
-        
-        async function loadAPISettings() {
-            try {
-                const response = await fetch(`${PixelMind.API_BASE_URL}/api/settings`);
-                apiSettings = await response.json();
-                
-                // Load prompt suggestions
-                loadPromptSuggestions();
-                
-            } catch (error) {
-                console.error('Error loading settings:', error);
-                // Fallback suggestions
-                loadFallbackSuggestions();
-            }
-        }
-        
-        function loadPromptSuggestions() {
-            const container = document.getElementById('exampleTags');
-            const suggestions = apiSettings.prompt_suggestions || [
-                'thêm ánh sáng ấm áp',
-                'làm sáng và rõ nét hơn',
-                'thay đổi thành phong cách vintage'
-            ];
-            
-            container.innerHTML = suggestions.map(suggestion => 
-                `<span class="tag" onclick="addExample('${suggestion}')">${suggestion}</span>`
-            ).join('');
-        }
-        
-        function loadFallbackSuggestions() {
-            const container = document.getElementById('exampleTags');
-            const fallback = [
-                'thêm ánh sáng ấm áp',
-                'làm sáng và rõ nét hơn',
-                'thay đổi thành phong cách vintage',
-                'làm ảnh trở nên nghệ thuật hơn',
-                'cải thiện chất lượng ảnh'
-            ];
-            
-            container.innerHTML = fallback.map(suggestion => 
-                `<span class="tag" onclick="addExample('${suggestion}')">${suggestion}</span>`
-            ).join('');
-        }
-        
-        function setupSliderListeners() {
-            // Strength slider
-            const strengthSlider = document.getElementById('strengthSlider');
-            const strengthValue = document.getElementById('strengthValue');
-            strengthSlider.addEventListener('input', function() {
-                strengthValue.textContent = Math.round(this.value * 100) + '%';
-            });
-            
-            // Guidance slider
-            const guidanceSlider = document.getElementById('guidanceSlider');
-            const guidanceValue = document.getElementById('guidanceValue');
-            guidanceSlider.addEventListener('input', function() {
-                guidanceValue.textContent = this.value;
-            });
-            
-            // Num images slider
-            const numImagesSlider = document.getElementById('numImagesSlider');
-            const numImagesValue = document.getElementById('numImagesValue');
-            numImagesSlider.addEventListener('input', function() {
-                numImagesValue.textContent = this.value;
-            });
-        }
-        
-        function toggleSettings() {
-            const settings = document.getElementById('advancedSettings');
-            const toggle = document.getElementById('settingsToggle');
-            
-            if (settings.style.display === 'none' || settings.style.display === '') {
-                settings.style.display = 'block';
-                toggle.textContent = '▲';
-            } else {
-                settings.style.display = 'none';
-                toggle.textContent = '▼';
-            }
-        }
         
         function addExample(text) {
             const promptInput = document.getElementById('promptInput');
@@ -244,29 +125,22 @@
             // Save prompt for later use
             PixelMind.savePrompt(prompt);
             
-            // Get settings values
-            const strength = document.getElementById('strengthSlider').value;
-            const guidanceScale = document.getElementById('guidanceSlider').value;
-            const numImages = document.getElementById('numImagesSlider').value;
-            
             // Show loading modal
-            showLoading(prompt, {strength, guidanceScale, numImages});
+            showLoading(prompt);
             
             try {
                 // Convert base64 to blob
                 const response = await fetch(capturedImageData);
                 const blob = await response.blob();
                 
-                // Create form data với custom settings
+                // Create form data với default optimized settings
                 const formData = new FormData();
                 formData.append('image', blob, 'captured.jpg');
                 formData.append('prompt', prompt);
-                formData.append('strength', strength);
-                formData.append('guidance_scale', guidanceScale);
-                formData.append('num_images', numImages);
+                formData.append('strength', '0.3'); // Default optimized strength
                 
-                // Send to backend (sử dụng custom endpoint)
-                const result = await fetch(`${PixelMind.API_BASE_URL}/api/upload_custom`, {
+                // Send to backend (sử dụng simple endpoint)
+                const result = await fetch(`${PixelMind.API_BASE_URL}/api/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -293,13 +167,8 @@
             }
         }
         
-        function showLoading(prompt, settings) {
+        function showLoading(prompt) {
             document.getElementById('loadingModal').style.display = 'flex';
-            
-            // Update loading description
-            const numImages = settings.numImages;
-            const description = `AI đang tạo ${numImages} ảnh với mức độ thay đổi ${Math.round(settings.strength * 100)}%. Quá trình này có thể mất 25-35 giây.`;
-            document.getElementById('loadingDescription').textContent = description;
             
             // Show enhanced prompt info
             const enhancedInfo = document.getElementById('enhancedPromptDisplay');
