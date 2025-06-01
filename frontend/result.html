@@ -51,6 +51,9 @@
                                         <button class="download-btn" onclick="downloadSelectedImage()">
                                             ⬇️ Tải xuống
                                         </button>
+                                        <button class="download-btn qr-btn" onclick="showQRCode()">
+                                            📱 Tải xuống QR
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -98,8 +101,26 @@
                         <li><strong>Mức độ thay đổi thấp:</strong> Giúp ảnh sinh ra gần với bản gốc hơn</li>
                         <li><strong>Nhiều lựa chọn:</strong> Tạo nhiều ảnh để chọn ra kết quả tốt nhất</li>
                         <li><strong>Prompt engineering:</strong> Hệ thống tự động tối ưu mô tả của bạn</li>
+                        <li><strong>QR Code:</strong> Quét mã QR để tải ảnh về điện thoại dễ dàng</li>
                     </ul>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- QR Modal -->
+    <div id="qrModal" class="qr-modal" style="display: none;">
+        <div class="qr-content">
+            <div class="qr-header">
+                <h3>📱 Quét QR để tải ảnh</h3>
+                <button class="close-qr" onclick="closeQR()">×</button>
+            </div>
+            <div class="qr-image">
+                <img id="qrCodeImage" src="" alt="QR Code">
+            </div>
+            <p>Sử dụng camera điện thoại để quét mã QR và tải ảnh về</p>
+            <div class="qr-info">
+                <p id="qrImageName"></p>
             </div>
         </div>
     </div>
@@ -243,6 +264,27 @@
             PixelMind.showNotification('Đang tải ảnh...', 'success');
         }
         
+        function showQRCode() {
+            if (!currentResult) return;
+            
+            const images = currentResult.generated_images || [currentResult.primary_image];
+            const selectedImage = images[selectedImageIndex];
+            const qrUrl = `${PixelMind.API_BASE_URL}/api/qr/${selectedImage.filename}`;
+            
+            // Update QR modal content
+            document.getElementById('qrCodeImage').src = qrUrl;
+            document.getElementById('qrImageName').textContent = `Ảnh ${selectedImageIndex + 1}: ${selectedImage.filename}`;
+            
+            // Show QR modal
+            document.getElementById('qrModal').style.display = 'flex';
+            
+            PixelMind.showNotification('QR Code đã được tạo! Quét để tải ảnh về điện thoại.', 'success');
+        }
+        
+        function closeQR() {
+            document.getElementById('qrModal').style.display = 'none';
+        }
+        
         function downloadAll() {
             if (!currentResult) return;
             
@@ -277,8 +319,21 @@
             window.location.href = 'edit.html';
         }
         
+        // Close QR modal when clicking outside
+        document.getElementById('qrModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeQR();
+            }
+        });
+        
         // Add keyboard navigation
         document.addEventListener('keydown', function(e) {
+            // Close QR modal with Escape
+            if (e.key === 'Escape') {
+                closeQR();
+                return;
+            }
+            
             const images = currentResult?.generated_images || [currentResult?.primary_image];
             if (!images) return;
             
@@ -289,6 +344,8 @@
             } else if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 downloadSelectedImage();
+            } else if (e.key === 'q' || e.key === 'Q') {
+                showQRCode();
             }
         });
     </script>
