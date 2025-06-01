@@ -1,10 +1,12 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 import os
 import uuid
 import json
 import requests
 import time
+import qrcode
+from io import BytesIO
 from leonardo_api import LeonardoAPI
 
 app = Flask(__name__)
@@ -130,6 +132,36 @@ def get_result(filename):
 def download_image(filename):
     return send_from_directory(RESULT_FOLDER, filename, as_attachment=True)
 
+@app.route('/api/qr/<filename>')
+def generate_qr_code(filename):
+    """Tạo QR code cho download link"""
+    try:
+        # Tạo download URL
+        download_url = f"{request.url_root}api/download/{filename}"
+        
+        # Generate QR code
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(download_url)
+        qr.make(fit=True)
+        
+        # Tạo image
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convert to bytes để return
+        img_io = BytesIO()
+        img.save(img_io, 'PNG')
+        img_io.seek(0)
+        
+        return send_file(img_io, mimetype='image/png')
+        
+    except Exception as e:
+        return jsonify({'error': f'QR generation failed: {str(e)}'}), 500
+
 @app.route('/api/settings')
 def get_settings():
     """Trả về các setting mặc định và options"""
@@ -178,7 +210,8 @@ def health():
         'status': 'healthy',
         'leonardo_model': 'PhotoReal v2',
         'optimized_settings': True,
-        'version': '2.0'
+        'version': '2.0',
+        'qr_enabled': True
     })
 
 if __name__ == '__main__':
