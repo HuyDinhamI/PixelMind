@@ -4,6 +4,12 @@ import time
 import os
 import uuid
 import logging
+import asyncio
+from dotenv import load_dotenv
+from gemini_service import GeminiService
+
+# Load environment variables
+load_dotenv()
 
 # Setup detailed logging
 logging.basicConfig(
@@ -14,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class LeonardoAPI:
     def __init__(self):
-        self.api_key = "5605afe7-1f6d-40fd-979e-22b7f2df72ce"
+        self.api_key = os.getenv("LEONARDO_API_KEY")
         self.authorization = f"Bearer {self.api_key}"
         self.headers = {
             "accept": "application/json",
@@ -23,6 +29,8 @@ class LeonardoAPI:
         }
         # Sử dụng PhotoReal v2 - tốt hơn cho chỉnh sửa ảnh thực tế
         self.model_id = "1e60896f-3c26-4296-8ecc-53e2afecc132"  # PhotoReal v2
+        # Initialize Gemini service for translation
+        self.gemini_service = GeminiService()
         logger.info(f"LeonardoAPI initialized with model: {self.model_id}")
     
     def enhance_prompt(self, user_prompt):
@@ -42,6 +50,22 @@ class LeonardoAPI:
         logger.info(f"Prompt length: {len(enhanced)} characters")
         
         return enhanced
+    
+    async def translate_and_enhance_prompt(self, vietnamese_prompt):
+        """Dịch prompt từ tiếng Việt sang tiếng Anh và enhance"""
+        try:
+            # Attempt translation
+            logger.info(f"Attempting to translate: '{vietnamese_prompt}'")
+            english_prompt = await self.gemini_service.translate_to_english(vietnamese_prompt)
+            logger.info(f"Translation successful: {vietnamese_prompt} → {english_prompt}")
+            working_prompt = english_prompt
+        except Exception as e:
+            # Fallback to Vietnamese
+            logger.warning(f"Translation failed, using Vietnamese: {str(e)}")
+            working_prompt = vietnamese_prompt
+        
+        # Enhance prompt (works with both languages)
+        return self.enhance_prompt(working_prompt)
     
     def upload_image(self, image_path):
         """Upload image to Leonardo and get image ID"""
@@ -104,7 +128,7 @@ class LeonardoAPI:
             logger.error(error_msg)
             return None, error_msg
     
-    def generate_image(self, image_path, prompt, strength=0.3):
+    async def generate_image(self, image_path, prompt, strength=0.3):
         """Generate image with Leonardo AI với thông số tối ưu và đơn giản"""
         try:
             logger.info("=== STARTING IMAGE GENERATION ===")
@@ -121,9 +145,9 @@ class LeonardoAPI:
             
             logger.info(f"Image upload successful, ID: {image_id}")
             
-            # Cải thiện prompt
-            logger.info("Step 2: Enhancing prompt...")
-            enhanced_prompt = self.enhance_prompt(prompt)
+            # Translate and enhance prompt
+            logger.info("Step 2: Translating and enhancing prompt...")
+            enhanced_prompt = await self.translate_and_enhance_prompt(prompt)
             
             # Generate image với thông số tối ưu cố định
             logger.info("Step 3: Preparing generation request...")

@@ -1,19 +1,30 @@
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import os
 import uuid
 import logging
+import aiofiles
 from leonardo_api import LeonardoAPI
 
-# Setup detailed logging for Flask
+# Setup detailed logging for FastAPI
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-CORS(app)
+app = FastAPI(title="PixelMind API", version="2.0.0")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -30,33 +41,23 @@ logger.info("Initializing Leonardo API...")
 leonardo = LeonardoAPI()
 logger.info("Leonardo API initialized")
 
-@app.route('/api/upload', methods=['POST'])
-def upload_and_process():
+@app.post("/api/upload")
+async def upload_and_process(
+    image: UploadFile = File(...),
+    prompt: str = Form(...),
+    strength: float = Form(0.3)
+):
     logger.info("=== NEW UPLOAD REQUEST ===")
     
     try:
         # Log request details
-        logger.info(f"Request method: {request.method}")
-        logger.info(f"Request headers: {dict(request.headers)}")
-        logger.info(f"Request files: {list(request.files.keys())}")
-        logger.info(f"Request form data: {dict(request.form)}")
-        
-        # Nhận ảnh và prompt từ frontend
-        if 'image' not in request.files:
-            logger.error("No image file in request")
-            return jsonify({'error': 'No image file'}), 400
-        
-        image_file = request.files['image']
-        prompt = request.form.get('prompt', '')
-        strength = float(request.form.get('strength', 0.3))  # Default optimized strength
-        
-        logger.info(f"Received image file: {image_file.filename}")
+        logger.info(f"Received image file: {image.filename}")
         logger.info(f"Received prompt: '{prompt}'")
         logger.info(f"Received strength: {strength}")
         
-        if image_file.filename == '':
+        if not image.filename:
             logger.error("Empty image filename")
-            return jsonify({'error': 'No image selected'}), 400
+            raise HTTPException(status_code=400, detail="No image selected")
         
         # Tạo unique ID cho request này
         request_id = str(uuid.uuid4())
@@ -69,16 +70,20 @@ def upload_and_process():
         logger.info(f"Saving original image to: {original_path}")
         
         try:
-            image_file.save(original_path)
+            # Read and save image using aiofiles
+            contents = await image.read()
+            async with aiofiles.open(original_path, 'wb') as f:
+                await f.write(contents)
+            
             file_size = os.path.getsize(original_path)
             logger.info(f"Original image saved successfully, size: {file_size} bytes")
         except Exception as e:
             logger.error(f"Failed to save original image: {str(e)}")
-            return jsonify({'error': f'Failed to save image: {str(e)}'}), 500
+            raise HTTPException(status_code=500, detail=f"Failed to save image: {str(e)}")
         
-        # Gọi Leonardo API với thông số tối ưu
-        logger.info("Calling Leonardo API for image generation...")
-        result = leonardo.generate_image(original_path, prompt, strength)
+        # Gọi Leonardo API với translation
+        logger.info("Calling Leonardo API for image generation with translation...")
+        result = await leonardo.generate_image(original_path, prompt, strength)
         
         logger.info(f"Leonardo API result: {result}")
         
@@ -95,50 +100,62 @@ def upload_and_process():
                 'total_images': len(result['images'])
             }
             logger.info(f"Sending success response: {response_data}")
-            return jsonify(response_data)
+            return response_data
         else:
             logger.error(f"Leonardo API failed: {result['error']}")
-            error_response = {
-                'success': False,
-                'error': result['error']
-            }
-            logger.info(f"Sending error response: {error_response}")
-            return jsonify(error_response), 500
+            raise HTTPException(status_code=500, detail=result['error'])
             
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Exception in upload_and_process: {str(e)}")
         logger.exception("Full exception traceback:")
-        return jsonify({'error': str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.route('/api/image/<filename>')
-def get_image(filename):
+@app.get("/api/image/{filename}")
+async def get_image(filename: str):
     logger.info(f"Serving image: {filename}")
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(file_path)
 
-@app.route('/api/result/<filename>')
-def get_result(filename):
+@app.get("/api/result/{filename}")
+async def get_result(filename: str):
     logger.info(f"Serving result: {filename}")
-    return send_from_directory(RESULT_FOLDER, filename)
+    file_path = os.path.join(RESULT_FOLDER, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Result not found")
+    return FileResponse(file_path)
 
-@app.route('/api/download/<filename>')
-def download_image(filename):
+@app.get("/api/download/{filename}")
+async def download_image(filename: str):
     logger.info(f"Download requested for: {filename}")
-    return send_from_directory(RESULT_FOLDER, filename, as_attachment=True)
+    file_path = os.path.join(RESULT_FOLDER, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(
+        file_path, 
+        media_type='application/octet-stream',
+        filename=filename
+    )
 
-@app.route('/health')
-def health():
+@app.get("/health")
+async def health():
     logger.info("Health check requested")
-    return jsonify({
+    return {
         'status': 'healthy',
-        'leonardo_model': 'Leonardo Creative',
+        'leonardo_model': 'PhotoReal v2',
         'optimized_settings': True,
-        'version': '2.1',
-        'features': ['simple_edit', 'optimized_defaults'],
-        'logging_enabled': True
-    })
+        'version': '3.0',
+        'features': ['simple_edit', 'optimized_defaults', 'translation_support'],
+        'logging_enabled': True,
+        'framework': 'FastAPI'
+    }
 
 if __name__ == '__main__':
-    logger.info("Starting Flask application...")
+    import uvicorn
+    logger.info("Starting FastAPI application...")
     logger.info(f"Upload folder: {UPLOAD_FOLDER}")
     logger.info(f"Result folder: {RESULT_FOLDER}")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    uvicorn.run("app:app", host="0.0.0.0", port=5000, reload=True)

@@ -5,6 +5,7 @@
 ## 🚀 Tính năng
 
 - **Chụp ảnh trực tiếp**: Sử dụng camera của máy tính
+- **Hỗ trợ tiếng Việt**: Nhập mô tả bằng tiếng Việt, tự động dịch sang tiếng Anh
 - **AI Image Editing**: Tích hợp Leonardo AI để chỉnh sửa ảnh thông minh
 - **Giao diện thân thiện**: Thiết kế đơn giản, dễ sử dụng
 - **Preview & Download**: Xem trước và tải xuống kết quả
@@ -70,9 +71,22 @@ pip install -r requirements.txt
 
 ### 3. Chạy Backend
 
+**Option 1: Sử dụng script tự động (Khuyến nghị)**
 ```bash
-# Trong thư mục backend
-python app.py
+# Từ thư mục gốc
+./start_fastapi.sh
+```
+
+**Option 2: Chạy thủ công**
+```bash
+# Di chuyển vào thư mục backend
+cd backend
+
+# Cài đặt dependencies
+pip install -r requirements.txt
+
+# Chạy FastAPI server
+uvicorn app:app --reload --host 0.0.0.0 --port 5000
 ```
 
 Backend sẽ chạy tại `http://localhost:5000`
