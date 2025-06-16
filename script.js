@@ -1,3 +1,61 @@
+// Logging System
+class Logger {
+    static log(level, phase, message, data = {}) {
+        const timestamp = new Date().toLocaleTimeString();
+        const prefix = `[${timestamp}] [${level}] [${phase}]`;
+        
+        switch (level) {
+            case 'INFO':
+                console.log(`${prefix} ${message}`, data);
+                break;
+            case 'WARN':
+                console.warn(`${prefix} ${message}`, data);
+                break;
+            case 'ERROR':
+                console.error(`${prefix} ${message}`, data);
+                break;
+            case 'API':
+                console.log(`%c${prefix} ${message}`, 'color: #4facfe', data);
+                break;
+            case 'PHASE':
+                console.log(`%c${prefix} ${message}`, 'color: #f093fb; font-weight: bold', data);
+                break;
+        }
+    }
+
+    static info(phase, message, data = {}) {
+        this.log('INFO', phase, message, data);
+    }
+
+    static warn(phase, message, data = {}) {
+        this.log('WARN', phase, message, data);
+    }
+
+    static error(phase, message, error = null) {
+        const errorData = error ? {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        } : {};
+        this.log('ERROR', phase, message, errorData);
+    }
+
+    static api(service, action, request = {}, response = {}) {
+        this.log('API', service, `${action}`, {
+            request: request,
+            response: response
+        });
+    }
+
+    static phase(from, to, reason = '') {
+        this.log('PHASE', 'TRANSITION', `${from} → ${to}${reason ? ': ' + reason : ''}`, {
+            from: from,
+            to: to,
+            reason: reason
+        });
+    }
+}
+
 // Game State Management
 class GameController {
     constructor() {
@@ -9,9 +67,11 @@ class GameController {
     }
 
     init() {
+        Logger.info('GAME', 'Initializing PixelMind Game Controller');
         this.setupEventListeners();
         this.setupCharacterCounters();
         this.setupFunFacts();
+        Logger.info('GAME', 'Game Controller initialized successfully');
     }
 
     setupEventListeners() {
@@ -97,6 +157,8 @@ class GameController {
     }
 
     switchPhase(phaseNumber) {
+        Logger.phase(this.currentPhase, phaseNumber, 'User navigation');
+        
         // Hide current phase
         document.querySelectorAll('.phase').forEach(phase => {
             phase.classList.remove('active');
@@ -106,25 +168,40 @@ class GameController {
         setTimeout(() => {
             document.getElementById(`phase${phaseNumber}`).classList.add('active');
             this.currentPhase = phaseNumber;
+            Logger.info('PHASE', `Successfully switched to phase ${phaseNumber}`);
         }, 300);
     }
 
     handleLogin() {
+        Logger.info('LOGIN', 'Starting login process');
+        
         const fullName = document.getElementById('fullName').value.trim();
         const email = document.getElementById('email').value.trim();
 
+        Logger.info('LOGIN', 'Validating user input', { 
+            fullNameLength: fullName.length, 
+            emailFormat: email 
+        });
+
         if (!this.validateEmail(email)) {
+            Logger.error('LOGIN', 'Email validation failed', { email });
             this.showError('Email không hợp lệ. Vui lòng nhập email đúng định dạng.');
             return;
         }
 
         if (fullName.length < 2) {
+            Logger.error('LOGIN', 'Full name too short', { fullNameLength: fullName.length });
             this.showError('Vui lòng nhập họ và tên đầy đủ.');
             return;
         }
 
         this.userData = { fullName, email };
         localStorage.setItem('pixelmind_user', JSON.stringify(this.userData));
+        
+        Logger.info('LOGIN', 'Login successful, user data saved', { 
+            fullName, 
+            email: email.replace(/(.{3}).*(@.*)/, '$1***$2') // Hide email for privacy
+        });
         
         this.switchPhase(2);
     }
@@ -135,23 +212,34 @@ class GameController {
     }
 
     async startCamera() {
+        Logger.info('CAMERA', 'Requesting camera access');
+        
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
+            const constraints = { 
                 video: { 
                     width: { ideal: 1280 },
                     height: { ideal: 720 },
                     facingMode: 'user'
                 } 
-            });
+            };
+
+            Logger.info('CAMERA', 'Camera constraints', constraints);
+            
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
             
             const video = document.getElementById('cameraVideo');
             video.srcObject = stream;
+            
+            Logger.info('CAMERA', 'Camera access granted successfully', {
+                streamId: stream.id,
+                tracks: stream.getTracks().length
+            });
             
             document.getElementById('startCamera').style.display = 'none';
             document.getElementById('captureBtn').style.display = 'flex';
             
         } catch (error) {
-            console.error('Camera error:', error);
+            Logger.error('CAMERA', 'Camera access failed', error);
             this.showError('Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.');
         }
     }
@@ -440,32 +528,51 @@ class AIService {
     }
 
     async translateToEnglish(vietnamesePrompt) {
+        Logger.api('GEMINI', 'Translation request started', { 
+            originalPrompt: vietnamesePrompt,
+            promptLength: vietnamesePrompt.length 
+        });
+
         try {
+            const requestBody = {
+                model: 'gemini-1.5-flash',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'Bạn là một chuyên gia trong việc viết prompt cho AI sinh ảnh. Nhiệm vụ của bạn là dịch prompt từ tiếng Việt sang tiếng Anh một cách chính xác và tự nhiên nhất. Hãy đảm bảo rằng nội dung được dịch giữ nguyên ý nghĩa và ngữ cảnh ban đầu của người dùng.'
+                    },
+                    {
+                        role: 'user',
+                        content: vietnamesePrompt
+                    }
+                ]
+            };
+
             const response = await fetch(`${this.geminiUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.geminiKey}`
                 },
-                body: JSON.stringify({
-                    model: 'gemini-1.5-flash',
-                    messages: [
-                        {
-                            role: 'system',
-                            content: 'Bạn là một chuyên gia trong việc viết prompt cho AI sinh ảnh. Nhiệm vụ của bạn là dịch prompt từ tiếng Việt sang tiếng Anh một cách chính xác và tự nhiên nhất. Hãy đảm bảo rằng nội dung được dịch giữ nguyên ý nghĩa và ngữ cảnh ban đầu của người dùng.'
-                        },
-                        {
-                            role: 'user',
-                            content: vietnamesePrompt
-                        }
-                    ]
-                })
+                body: JSON.stringify(requestBody)
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const data = await response.json();
-            return data.choices[0].message.content;
+            const translatedText = data.choices[0].message.content;
+
+            Logger.api('GEMINI', 'Translation completed successfully', {
+                originalPrompt: vietnamesePrompt,
+                translatedPrompt: translatedText,
+                responseStatus: response.status
+            });
+
+            return translatedText;
         } catch (error) {
-            console.error('Translation error:', error);
+            Logger.error('GEMINI', 'Translation failed', error);
             throw new Error('Lỗi khi dịch prompt');
         }
     }
