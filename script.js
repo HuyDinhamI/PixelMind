@@ -1,12 +1,9 @@
-// Logging System
+// Simple Browser Console Logging
 class Logger {
-    static logServerUrl = 'http://localhost:3001/api/log';
-    
-    static async log(level, phase, message, data = {}) {
+    static log(level, phase, message, data = {}) {
         const timestamp = new Date().toLocaleTimeString();
         const prefix = `[${timestamp}] [${level}] [${phase}]`;
         
-        // Browser console logging (keep as fallback)
         switch (level) {
             case 'INFO':
                 console.log(`${prefix} ${message}`, data);
@@ -23,26 +20,6 @@ class Logger {
             case 'PHASE':
                 console.log(`%c${prefix} ${message}`, 'color: #f093fb; font-weight: bold', data);
                 break;
-        }
-
-        // Send to terminal log server
-        try {
-            await fetch(this.logServerUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    level: level,
-                    phase: phase,
-                    message: message,
-                    data: data,
-                    timestamp: timestamp
-                })
-            });
-        } catch (error) {
-            // Silently fail if log server is not available
-            // Don't spam console with log server errors
         }
     }
 
@@ -395,46 +372,43 @@ class GameController {
         });
 
         try {
-            const aiService = new AIService();
+            // Call backend API server instead of direct AI services
+            Logger.info('AI_GENERATION', 'Sending request to backend API server');
             
-            // Step 1: Translate prompts to English
-            Logger.info('AI_GENERATION', 'Step 1: Translating prompts to English');
-            const englishPrompt1 = await aiService.translateToEnglish(prompt1);
-            const englishPrompt2 = await aiService.translateToEnglish(prompt2);
-            
-            // Step 2: Convert image to blob
-            Logger.info('AI_GENERATION', 'Step 2: Converting image to blob format');
-            const imageBlob = this.dataURLtoBlob(this.capturedImage);
-            Logger.info('AI_GENERATION', 'Image converted to blob', {
-                blobSize: Math.round(imageBlob.size / 1024) + 'KB',
-                blobType: imageBlob.type
+            const response = await fetch('http://localhost:5000/api/generate-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    image: this.capturedImage,
+                    prompt1: prompt1,
+                    prompt2: prompt2
+                })
             });
+
+            if (!response.ok) {
+                throw new Error(`Backend API error: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
             
-            // Step 3: Upload image to Leonardo AI
-            Logger.info('AI_GENERATION', 'Step 3: Uploading image to Leonardo AI');
-            const uploadedImageId = await aiService.uploadImage(imageBlob);
-            Logger.info('AI_GENERATION', 'Image uploaded successfully', { uploadedImageId });
-            
-            // Step 4: Generate style image
-            Logger.info('AI_GENERATION', 'Step 4: Generating style image');
-            const styleImageId = await aiService.generateStyleImage(englishPrompt2);
-            Logger.info('AI_GENERATION', 'Style image generated', { styleImageId });
-            
-            // Step 5: Generate final image
-            Logger.info('AI_GENERATION', 'Step 5: Generating final image with ControlNet');
-            const finalImageUrl = await aiService.generateFinalImage(englishPrompt1, uploadedImageId, styleImageId);
-            Logger.info('AI_GENERATION', 'Final image generated successfully', { 
-                finalImageUrl,
-                processCompleted: true 
-            });
-            
-            return {
-                success: true,
-                imageUrl: finalImageUrl
-            };
+            if (result.success) {
+                Logger.info('AI_GENERATION', 'Backend processing completed successfully', {
+                    imageUrl: result.imageUrl,
+                    message: result.message
+                });
+                
+                return {
+                    success: true,
+                    imageUrl: result.imageUrl
+                };
+            } else {
+                throw new Error(result.error || 'Backend processing failed');
+            }
             
         } catch (error) {
-            Logger.error('AI_GENERATION', 'AI generation process failed', error);
+            Logger.error('AI_GENERATION', 'Backend API call failed', error);
             
             // Fallback for demo purposes
             Logger.warn('AI_GENERATION', 'Switching to demo mode fallback');
@@ -582,208 +556,6 @@ class GameController {
     }
 }
 
-// Enhanced AI Service Integration
-class AIService {
-    constructor() {
-        this.apiKey = 'ed4bdeec-a43d-423e-aa0f-25f5618280a5';
-        this.geminiKey = 'AIzaSyDBzJdJCKt8ZWGOxNkJ7DfF0uTNFyLyUv0';
-        this.baseUrl = 'https://cloud.leonardo.ai/api/rest/v1';
-        this.geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/openai';
-    }
-
-    async translateToEnglish(vietnamesePrompt) {
-        Logger.api('GEMINI', 'Translation request started', { 
-            originalPrompt: vietnamesePrompt,
-            promptLength: vietnamesePrompt.length 
-        });
-
-        try {
-            const requestBody = {
-                model: 'gemini-1.5-flash',
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'Bạn là một chuyên gia trong việc viết prompt cho AI sinh ảnh. Nhiệm vụ của bạn là dịch prompt từ tiếng Việt sang tiếng Anh một cách chính xác và tự nhiên nhất. Hãy đảm bảo rằng nội dung được dịch giữ nguyên ý nghĩa và ngữ cảnh ban đầu của người dùng.'
-                    },
-                    {
-                        role: 'user',
-                        content: vietnamesePrompt
-                    }
-                ]
-            };
-
-            const response = await fetch(`${this.geminiUrl}/chat/completions`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.geminiKey}`
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            const translatedText = data.choices[0].message.content;
-
-            Logger.api('GEMINI', 'Translation completed successfully', {
-                originalPrompt: vietnamesePrompt,
-                translatedPrompt: translatedText,
-                responseStatus: response.status
-            });
-
-            return translatedText;
-        } catch (error) {
-            Logger.error('GEMINI', 'Translation failed', error);
-            throw new Error('Lỗi khi dịch prompt');
-        }
-    }
-
-    async uploadImage(imageBlob) {
-        try {
-            // Step 1: Initialize image upload
-            const initResponse = await fetch(`${this.baseUrl}/init-image`, {
-                method: 'POST',
-                headers: {
-                    'accept': 'application/json',
-                    'content-type': 'application/json',
-                    'authorization': `Bearer ${this.apiKey}`
-                },
-                body: JSON.stringify({ extension: 'jpg' })
-            });
-
-            const initData = await initResponse.json();
-            const uploadData = initData.uploadInitImage;
-            const fields = JSON.parse(uploadData.fields);
-            
-            // Step 2: Upload image to S3
-            const formData = new FormData();
-            Object.keys(fields).forEach(key => {
-                formData.append(key, fields[key]);
-            });
-            formData.append('file', imageBlob);
-
-            await fetch(uploadData.url, {
-                method: 'POST',
-                body: formData
-            });
-
-            return uploadData.id;
-        } catch (error) {
-            console.error('Upload error:', error);
-            throw new Error('Lỗi khi upload ảnh');
-        }
-    }
-
-    async generateStyleImage(stylePrompt) {
-        try {
-            const englishPrompt = await this.translateToEnglish(stylePrompt);
-            
-            const response = await fetch(`${this.baseUrl}/generations`, {
-                method: 'POST',
-                headers: {
-                    'accept': 'application/json',
-                    'content-type': 'application/json',
-                    'authorization': `Bearer ${this.apiKey}`
-                },
-                body: JSON.stringify({
-                    height: 768,
-                    width: 1024,
-                    modelId: 'aa77f04e-3eec-4034-9c07-d0f619684628',
-                    prompt: englishPrompt,
-                    num_images: 1,
-                    alchemy: true
-                })
-            });
-
-            const data = await response.json();
-            const generationId = data.sdGenerationJob.generationId;
-            
-            // Wait for generation to complete
-            await this.waitForGeneration(generationId);
-            
-            // Get the generated image ID
-            const result = await this.getGenerationResult(generationId);
-            return result.generations_by_pk.generated_images[0].id;
-        } catch (error) {
-            console.error('Style generation error:', error);
-            throw new Error('Lỗi khi tạo ảnh style');
-        }
-    }
-
-    async generateFinalImage(mainPrompt, uploadedImageId, styleImageId) {
-        try {
-            const englishPrompt = await this.translateToEnglish(mainPrompt);
-            
-            const response = await fetch(`${this.baseUrl}/generations`, {
-                method: 'POST',
-                headers: {
-                    'accept': 'application/json',
-                    'content-type': 'application/json',
-                    'authorization': `Bearer ${this.apiKey}`
-                },
-                body: JSON.stringify({
-                    height: 768,
-                    width: 1024,
-                    modelId: 'aa77f04e-3eec-4034-9c07-d0f619684628',
-                    prompt: englishPrompt,
-                    num_images: 1,
-                    alchemy: true,
-                    photoReal: true,
-                    photoRealVersion: 'v2',
-                    presetStyle: 'CINEMATIC',
-                    controlnets: [
-                        {
-                            initImageId: uploadedImageId,
-                            initImageType: 'UPLOADED',
-                            preprocessorId: 133, // Character Reference
-                            strengthType: 'Mid'
-                        },
-                        {
-                            initImageId: styleImageId,
-                            initImageType: 'GENERATED',
-                            preprocessorId: 67, // Style Reference
-                            strengthType: 'High'
-                        }
-                    ]
-                })
-            });
-
-            const data = await response.json();
-            const generationId = data.sdGenerationJob.generationId;
-            
-            // Wait for generation to complete
-            await this.waitForGeneration(generationId);
-            
-            // Get the final result
-            const result = await this.getGenerationResult(generationId);
-            return result.generations_by_pk.generated_images[0].url;
-        } catch (error) {
-            console.error('Final generation error:', error);
-            throw new Error('Lỗi khi tạo ảnh cuối cùng');
-        }
-    }
-
-    async waitForGeneration(generationId) {
-        return new Promise((resolve) => {
-            setTimeout(resolve, 30000); // Wait 30 seconds
-        });
-    }
-
-    async getGenerationResult(generationId) {
-        const response = await fetch(`${this.baseUrl}/generations/${generationId}`, {
-            method: 'GET',
-            headers: {
-                'accept': 'application/json',
-                'authorization': `Bearer ${this.apiKey}`
-            }
-        });
-
-        return await response.json();
-    }
-}
 
 // Animation Utilities
 class AnimationHelper {
@@ -821,7 +593,6 @@ class AnimationHelper {
 // Initialize Game
 document.addEventListener('DOMContentLoaded', () => {
     const game = new GameController();
-    const aiService = new AIService();
     
     // Add entrance animations to all buttons
     document.querySelectorAll('button').forEach((btn, index) => {
