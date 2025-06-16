@@ -1,9 +1,12 @@
 // Logging System
 class Logger {
-    static log(level, phase, message, data = {}) {
+    static logServerUrl = 'http://localhost:3001/api/log';
+    
+    static async log(level, phase, message, data = {}) {
         const timestamp = new Date().toLocaleTimeString();
         const prefix = `[${timestamp}] [${level}] [${phase}]`;
         
+        // Browser console logging (keep as fallback)
         switch (level) {
             case 'INFO':
                 console.log(`${prefix} ${message}`, data);
@@ -20,6 +23,26 @@ class Logger {
             case 'PHASE':
                 console.log(`%c${prefix} ${message}`, 'color: #f093fb; font-weight: bold', data);
                 break;
+        }
+
+        // Send to terminal log server
+        try {
+            await fetch(this.logServerUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    level: level,
+                    phase: phase,
+                    message: message,
+                    data: data,
+                    timestamp: timestamp
+                })
+            });
+        } catch (error) {
+            // Silently fail if log server is not available
+            // Don't spam console with log server errors
         }
     }
 
@@ -245,6 +268,8 @@ class GameController {
     }
 
     capturePhoto() {
+        Logger.info('CAMERA', 'Starting photo capture');
+        
         const video = document.getElementById('cameraVideo');
         const canvas = document.getElementById('captureCanvas');
         const ctx = canvas.getContext('2d');
@@ -253,11 +278,24 @@ class GameController {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
+        Logger.info('CAMERA', 'Canvas configured', {
+            width: canvas.width,
+            height: canvas.height,
+            videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight
+        });
+
         // Draw video frame to canvas
         ctx.drawImage(video, 0, 0);
 
         // Convert to data URL
         const imageData = canvas.toDataURL('image/jpeg', 0.8);
+        
+        Logger.info('CAMERA', 'Photo captured successfully', {
+            imageSize: Math.round(imageData.length / 1024) + 'KB',
+            format: 'JPEG',
+            quality: 0.8
+        });
         
         // Show preview
         const preview = document.getElementById('photoPreview');
@@ -350,24 +388,45 @@ class GameController {
     }
 
     async callImageGeneration(prompt1, prompt2) {
+        Logger.info('AI_GENERATION', 'Starting AI image generation process', {
+            prompt1: prompt1,
+            prompt2: prompt2,
+            imageSize: Math.round(this.capturedImage.length / 1024) + 'KB'
+        });
+
         try {
             const aiService = new AIService();
             
             // Step 1: Translate prompts to English
+            Logger.info('AI_GENERATION', 'Step 1: Translating prompts to English');
             const englishPrompt1 = await aiService.translateToEnglish(prompt1);
             const englishPrompt2 = await aiService.translateToEnglish(prompt2);
             
             // Step 2: Convert image to blob
+            Logger.info('AI_GENERATION', 'Step 2: Converting image to blob format');
             const imageBlob = this.dataURLtoBlob(this.capturedImage);
+            Logger.info('AI_GENERATION', 'Image converted to blob', {
+                blobSize: Math.round(imageBlob.size / 1024) + 'KB',
+                blobType: imageBlob.type
+            });
             
             // Step 3: Upload image to Leonardo AI
+            Logger.info('AI_GENERATION', 'Step 3: Uploading image to Leonardo AI');
             const uploadedImageId = await aiService.uploadImage(imageBlob);
+            Logger.info('AI_GENERATION', 'Image uploaded successfully', { uploadedImageId });
             
             // Step 4: Generate style image
+            Logger.info('AI_GENERATION', 'Step 4: Generating style image');
             const styleImageId = await aiService.generateStyleImage(englishPrompt2);
+            Logger.info('AI_GENERATION', 'Style image generated', { styleImageId });
             
             // Step 5: Generate final image
+            Logger.info('AI_GENERATION', 'Step 5: Generating final image with ControlNet');
             const finalImageUrl = await aiService.generateFinalImage(englishPrompt1, uploadedImageId, styleImageId);
+            Logger.info('AI_GENERATION', 'Final image generated successfully', { 
+                finalImageUrl,
+                processCompleted: true 
+            });
             
             return {
                 success: true,
@@ -375,15 +434,20 @@ class GameController {
             };
             
         } catch (error) {
-            console.error('AI generation failed:', error);
+            Logger.error('AI_GENERATION', 'AI generation process failed', error);
             
             // Fallback for demo purposes
-            console.log('Using fallback demo mode...');
+            Logger.warn('AI_GENERATION', 'Switching to demo mode fallback');
             return new Promise((resolve) => {
                 setTimeout(() => {
+                    const demoUrl = 'https://picsum.photos/400/400?random=' + Date.now();
+                    Logger.info('AI_GENERATION', 'Demo mode completed', { 
+                        demoImageUrl: demoUrl,
+                        mode: 'fallback'
+                    });
                     resolve({
                         success: true,
-                        imageUrl: 'https://picsum.photos/400/400?random=' + Date.now()
+                        imageUrl: demoUrl
                     });
                 }, 10000);
             });
