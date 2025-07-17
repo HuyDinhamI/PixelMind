@@ -495,18 +495,72 @@ class GameController {
         }, 60000);
     }
 
-    downloadImage() {
+    async downloadImage() {
         if (!this.generatedImageUrl) {
             this.showError('Không có ảnh để tải xuống.');
             return;
         }
 
-        const link = document.createElement('a');
-        link.href = this.generatedImageUrl;
-        link.download = `pixelmind_${Date.now()}.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        Logger.info('DOWNLOAD', 'Starting image download', { imageUrl: this.generatedImageUrl });
+
+        try {
+            // Show loading while downloading
+            this.showLoading();
+            
+            // Fetch image as blob to handle cross-origin URLs
+            const response = await fetch(this.generatedImageUrl, {
+                mode: 'cors',
+                headers: {
+                    'Accept': 'image/*'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch image: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = `pixelmind_generated_${Date.now()}.jpg`;
+            
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up object URL
+            URL.revokeObjectURL(objectUrl);
+            
+            Logger.info('DOWNLOAD', 'Image download completed successfully');
+            
+        } catch (error) {
+            Logger.error('DOWNLOAD', 'Download failed, trying fallback method', error);
+            
+            // Fallback: Direct link download (might open in new tab)
+            try {
+                const link = document.createElement('a');
+                link.href = this.generatedImageUrl;
+                link.download = `pixelmind_generated_${Date.now()}.jpg`;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                Logger.info('DOWNLOAD', 'Fallback download triggered');
+                
+            } catch (fallbackError) {
+                Logger.error('DOWNLOAD', 'All download methods failed', fallbackError);
+                this.showError('Không thể tải ảnh tự động. Vui lòng click chuột phải vào ảnh và chọn "Lưu ảnh".');
+            }
+        } finally {
+            this.hideLoading();
+        }
     }
 
     restartGame() {
